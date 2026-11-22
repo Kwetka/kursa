@@ -11,9 +11,10 @@ public sealed partial class WarehouseRepository
     public int CreateOperation(OperationInput operation, AppUser actor)
     {
         Validation.Operation(operation);
-        if (actor.Id <= 0) throw new UnauthorizedAccessException("Сначала войдите в программу.");
+        operation = operation with { Comment = Validation.Optional(operation.Comment, "Комментарий", 500) };
         using var c = Open();
         using var tx = c.BeginTransaction(IsolationLevel.Serializable);
+        var actual = RequireActor(c, tx, actor, u => u.CanPerform(operation.Kind));
         using (var q = new SqlCommand(@"DECLARE @result int, @resource nvarchar(255) = N'WarehouseCourse.Product:' + CONVERT(nvarchar(20), @product);
             EXEC @result = sys.sp_getapplock @Resource=@resource, @LockMode=N'Exclusive', @LockOwner=N'Transaction', @LockTimeout=15000;
             SELECT @result;", c, tx))
@@ -21,6 +22,8 @@ public sealed partial class WarehouseRepository
             Add(q, "@product", SqlDbType.Int, operation.ProductId);
             if (Convert.ToInt32(q.ExecuteScalar()) < 0) throw new InvalidOperationException("Товар занят другой операцией. Повторите попытку.");
         }
+        var sourceBefore = ReadBalance(c, tx, operation.ProductId, operation.FromWarehouseId);
+        var destinationBefore = ReadBalance(c, tx, operation.ProductId, operation.ToWarehouseId);
         if (operation.CounterpartyId is int partyId)
         {
             using var q = new SqlCommand("SELECT IsSupplier FROM dbo.Counterparties WITH (UPDLOCK,HOLDLOCK) WHERE Id=@id", c, tx);
@@ -51,12 +54,26 @@ public sealed partial class WarehouseRepository
             Add(q, "@kind", SqlDbType.TinyInt, (byte)operation.Kind); Add(q, "@product", SqlDbType.Int, operation.ProductId);
             Add(q, "@qty", SqlDbType.Decimal, operation.Quantity); Add(q, "@from", SqlDbType.Int, operation.FromWarehouseId);
             Add(q, "@to", SqlDbType.Int, operation.ToWarehouseId); Add(q, "@party", SqlDbType.Int, operation.CounterpartyId);
-            Add(q, "@comment", SqlDbType.NVarChar, Validation.Optional(operation.Comment, "Комментарий", 500), 500);
-            Add(q, "@user", SqlDbType.Int, actor.Id);
+            Add(q, "@comment", SqlDbType.NVarChar, operation.Comment, 500);
+            Add(q, "@user", SqlDbType.Int, actual.Id);
             id = Convert.ToInt32(q.ExecuteScalar());
         }
+        var sourceAfter = ReadBalance(c, tx, operation.ProductId, operation.FromWarehouseId);
+        var destinationAfter = ReadBalance(c, tx, operation.ProductId, operation.ToWarehouseId);
+        var action = operation.Kind switch { OperationKind.Receipt => "Проведён приход", OperationKind.Shipment => "Проведена реализация", _ => "Проведено перемещение" };
+        WriteAudit(c, tx, actual, action, "Складская операция", id.ToString(), new { Operation = operation, SourceBefore = sourceBefore, SourceAfter = sourceAfter, DestinationBefore = destinationBefore, DestinationAfter = destinationAfter });
         tx.Commit();
+        SyncAuditFile();
         return id;
+    }
+
+    private static decimal? ReadBalance(SqlConnection c, SqlTransaction tx, int productId, int? warehouseId)
+    {
+        if (warehouseId is null) return null;
+        using var q = new SqlCommand("SELECT Quantity FROM dbo.StockBalances WHERE ProductId=@product AND WarehouseId=@warehouse", c, tx);
+        Add(q, "@product", SqlDbType.Int, productId); Add(q, "@warehouse", SqlDbType.Int, warehouseId);
+        var value=q.ExecuteScalar();
+        return value is null or DBNull ? null : Convert.ToDecimal(value);
     }
 
     public List<OperationRow> GetOperations(OperationFilter filter)

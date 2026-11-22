@@ -1,7 +1,7 @@
 namespace Warehouse.Core.Models;
 
 public enum OperationKind { Receipt = 0, Shipment = 1, Transfer = 2 }
-public enum UserRole { Admin = 0, Manager = 1, Storekeeper = 2 }
+public enum UserRole { Admin = 0, Manager = 1, Storekeeper = 2, SalesManager = 3 }
 
 public sealed class Product
 {
@@ -32,16 +32,42 @@ public sealed class Counterparty
     public override string ToString() => $"{Name} ({TypeName.ToLowerInvariant()})";
 }
 
-public sealed record AppUser(int Id, string Login, string FullName, UserRole Role)
+public static class UserRoles
 {
-    public bool CanManageReferences => Role is UserRole.Admin or UserRole.Manager;
-    public bool CanAnalyze => Role is UserRole.Admin or UserRole.Manager;
-    public string RoleName => Role switch
+    public static string Name(UserRole role) => role switch
     {
         UserRole.Admin => "Администратор",
         UserRole.Manager => "Менеджер",
-        _ => "Кладовщик"
+        UserRole.Storekeeper => "Кладовщик",
+        UserRole.SalesManager => "Менеджер продаж",
+        _ => "Неизвестная роль"
     };
+}
+
+public sealed record AppUser(int Id, string Login, string FullName, UserRole Role)
+{
+    public bool CanManageProducts => Role is UserRole.Admin or UserRole.Storekeeper;
+    public bool CanManageWarehousesAndParties => Role is UserRole.Admin;
+    public bool CanManageUsers => Role is UserRole.Admin;
+    public bool CanAnalyze => Role is UserRole.Admin or UserRole.Manager;
+    public bool CanReceiptOrTransfer => Role is UserRole.Admin or UserRole.Storekeeper;
+    public bool CanShip => Role is UserRole.Admin or UserRole.SalesManager;
+    public bool CanPerform(OperationKind kind) => kind switch
+    {
+        OperationKind.Receipt or OperationKind.Transfer => CanReceiptOrTransfer,
+        OperationKind.Shipment => CanShip,
+        _ => false
+    };
+    public string RoleName => UserRoles.Name(Role);
+}
+
+public sealed class UserAccount
+{
+    public int Id { get; set; }
+    public string Login { get; set; } = "";
+    public string FullName { get; set; } = "";
+    public UserRole Role { get; set; }
+    public string RoleName => UserRoles.Name(Role);
 }
 
 public sealed record OperationInput(
@@ -56,7 +82,7 @@ public sealed class OperationRow
     public string KindName => Kind switch
     {
         OperationKind.Receipt => "Приход",
-        OperationKind.Shipment => "Расход",
+        OperationKind.Shipment => "Реализация",
         OperationKind.Transfer => "Перемещение",
         _ => "Неизвестно"
     };

@@ -30,7 +30,7 @@ public partial class ReportsView : UserControl
     private void Stock_Click(object sender, RoutedEventArgs e) => Ui.Run(() =>
     {
         _stocks.Refresh();
-        var rows=_stocks.LastRows ?? throw new InvalidOperationException("Не удалось загрузить остатки. Проверьте фильтр на вкладке остатков.");
+        var rows=_stocks.LastRows ?? throw new InvalidOperationException("Примените изменённые фильтры на вкладке остатков и повторите формирование отчёта.");
         var report=new StringBuilder();
         report.AppendLine("ОТЧЁТ О ТЕКУЩИХ СКЛАДСКИХ ОСТАТКАХ");
         report.AppendLine($"Сформирован: {DateTime.Now:dd.MM.yyyy HH:mm:ss} (местное время)");
@@ -48,7 +48,7 @@ public partial class ReportsView : UserControl
     });
     private void Turnover_Click(object sender, RoutedEventArgs e) => Ui.Run(() =>
     {
-        var rows=_turnover.LastRows ?? throw new InvalidOperationException("Сначала выберите товары и нажмите «Рассчитать» на вкладке оборачиваемости.");
+        var rows=_turnover.LastRows ?? throw new InvalidOperationException("Сначала выберите товары и нажмите «Применить» на вкладке оборачиваемости.");
         var report=new StringBuilder();
         report.AppendLine("ОТЧЁТ ПО ОБОРАЧИВАЕМОСТИ"); report.AppendLine($"Сформирован: {DateTime.Now:dd.MM.yyyy HH:mm:ss} (местное время)");
         report.AppendLine(_turnover.AppliedSummary); report.AppendLine(new string('=',75));

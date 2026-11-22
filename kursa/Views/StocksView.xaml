@@ -7,7 +7,8 @@
                 <TextBlock Text="Остаток сейчас; период отбирает позиции по дате последнего движения" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/></StackPanel>
         </DockPanel>
         <Border Grid.Row="1" Style="{StaticResource PanelCard}" Margin="0,0,0,12" Padding="15,12,15,3">
-            <WrapPanel>
+            <Expander x:Name="FiltersExpander" Header="Фильтры" IsExpanded="False">
+              <WrapPanel Margin="0,12,0,0">
                 <StackPanel Style="{StaticResource FilterField}" Width="215"><TextBlock Text="Движение с · дата / ЧЧ:ММ" Style="{StaticResource FieldLabel}"/><StackPanel Orientation="Horizontal"><DatePicker x:Name="FromPicker" Width="145"/><TextBox x:Name="FromTimeBox" Width="62" Margin="5,0,0,0" ToolTip="Время ЧЧ:ММ, необязательно"/></StackPanel></StackPanel>
                 <StackPanel Style="{StaticResource FilterField}" Width="215"><TextBlock Text="Движение по · дата / ЧЧ:ММ" Style="{StaticResource FieldLabel}"/><StackPanel Orientation="Horizontal"><DatePicker x:Name="ToPicker" Width="145"/><TextBox x:Name="ToTimeBox" Width="62" Margin="5,0,0,0" ToolTip="Время ЧЧ:ММ, необязательно"/></StackPanel></StackPanel>
                 <StackPanel Style="{StaticResource FilterField}" Width="200"><TextBlock Text="Склад" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="WarehouseBox"/></StackPanel>
@@ -15,8 +16,9 @@
                 <StackPanel Style="{StaticResource FilterField}" Width="130"><TextBlock Text="Остаток от" Style="{StaticResource FieldLabel}"/><TextBox x:Name="MinimumBox" KeyDown="Search_KeyDown"/></StackPanel>
                 <StackPanel Style="{StaticResource FilterField}" Width="210"><TextBlock Text="Поиск · товар или склад" Style="{StaticResource FieldLabel}"/><TextBox x:Name="SearchBox" KeyDown="Search_KeyDown"/></StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,12,17"><CheckBox x:Name="ZeroBox" Content="Показывать нулевые"/></StackPanel>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,0,10"><Button Content="Применить" Style="{StaticResource PrimaryButton}" Click="Apply_Click"/><Button Style="{StaticResource BaseButton}" Content="Сбросить" Click="Reset_Click"/></StackPanel>
-            </WrapPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,0,10"><Button x:Name="ApplyButton" Style="{StaticResource PrimaryButton}" Click="Apply_Click"/><Button Style="{StaticResource BaseButton}" Content="Сбросить" Click="Reset_Click"/></StackPanel>
+              </WrapPanel>
+            </Expander>
         </Border>
         <DataGrid x:Name="GridView" Grid.Row="2" HorizontalScrollBarVisibility="Auto">
             <DataGrid.Columns>

@@ -11,7 +11,7 @@ public partial class OperationWindow : Window
     public OperationWindow(WorkspaceContext context, OperationKind kind)
     {
         InitializeComponent(); _context=context; _kind=kind;
-        Heading.Text=kind switch { OperationKind.Receipt=>"Поступление товара", OperationKind.Shipment=>"Расход товара", _=>"Перемещение товара" };
+        Heading.Text=kind switch { OperationKind.Receipt=>"Поступление товара", OperationKind.Shipment=>"Реализация товара", _=>"Перемещение товара" };
         var products=context.Repository.GetProducts(); var warehouses=context.Repository.GetWarehouses();
         ProductBox.ItemsSource=products; ProductBox.SelectedIndex=products.Count>0 ? 0 : -1;
         FromBox.ItemsSource=warehouses; ToBox.ItemsSource=warehouses;

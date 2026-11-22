@@ -1,9 +1,10 @@
--- Схема версии 1. Выполняется внутри транзакции приложения, без удаления данных.
+-- Схема версии 2. Создание и недеструктивная миграция выполняются в одной транзакции.
 DECLARE @lockResult int;
 EXEC @lockResult = sys.sp_getapplock @Resource = N'WarehouseCourse.Schema',
     @LockMode = N'Exclusive', @LockOwner = N'Transaction', @LockTimeout = 15000;
 IF @lockResult < 0 THROW 51000, N'Не удалось заблокировать создание схемы.', 1;
 
+DECLARE @created bit = 0;
 IF OBJECT_ID(N'dbo.WarehouseSchemaVersion', N'U') IS NULL
 BEGIN
     IF OBJECT_ID(N'dbo.Products', N'U') IS NOT NULL OR OBJECT_ID(N'dbo.Warehouses', N'U') IS NOT NULL
@@ -78,11 +79,44 @@ BEGIN
         INCLUDE(Kind, Quantity, FromWarehouseId, ToWarehouseId);
     CREATE INDEX IX_StockBalances_Warehouse ON dbo.StockBalances(WarehouseId, ProductId);
     INSERT INTO dbo.WarehouseSchemaVersion(Id, Version) VALUES (1, 1);
-    SELECT CAST(1 AS bit);
+    SET @created = 1;
 END
-ELSE
+ELSE IF NOT EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id = 1 AND Version IN (1, 2))
+    THROW 51002, N'Версия базы данных несовместима с этой версией приложения.', 1;
+
+IF EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id=1 AND Version=1)
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id = 1 AND Version = 1)
-        THROW 51002, N'Версия базы данных несовместима с этой версией приложения.', 1;
-    SELECT CAST(0 AS bit);
+    -- WITH NOCHECK сохраняет старые записи с нулевой ценой/пустыми полями.
+    -- SQL Server всё равно проверяет новые и изменённые записи; исправьте старые через интерфейс.
+    ALTER TABLE dbo.Products WITH NOCHECK ADD CONSTRAINT CK_Products_Purchase_Positive CHECK (PurchasePrice > 0);
+    ALTER TABLE dbo.Products WITH NOCHECK ADD CONSTRAINT CK_Products_Sale_Positive CHECK (SalePrice > 0);
+    ALTER TABLE dbo.Warehouses WITH NOCHECK ADD CONSTRAINT CK_Warehouses_Required CHECK (
+        LEN(LTRIM(RTRIM(TRANSLATE(Name, NCHAR(9)+NCHAR(10)+NCHAR(11)+NCHAR(12)+NCHAR(13)+NCHAR(133)+NCHAR(160)+NCHAR(5760)+NCHAR(8192)+NCHAR(8193)+NCHAR(8194)+NCHAR(8195)+NCHAR(8196)+NCHAR(8197)+NCHAR(8198)+NCHAR(8199)+NCHAR(8200)+NCHAR(8201)+NCHAR(8202)+NCHAR(8232)+NCHAR(8233)+NCHAR(8239)+NCHAR(8287)+NCHAR(12288), REPLICATE(N' ',24))))) > 0 AND
+        LEN(LTRIM(RTRIM(TRANSLATE(Address, NCHAR(9)+NCHAR(10)+NCHAR(11)+NCHAR(12)+NCHAR(13)+NCHAR(133)+NCHAR(160)+NCHAR(5760)+NCHAR(8192)+NCHAR(8193)+NCHAR(8194)+NCHAR(8195)+NCHAR(8196)+NCHAR(8197)+NCHAR(8198)+NCHAR(8199)+NCHAR(8200)+NCHAR(8201)+NCHAR(8202)+NCHAR(8232)+NCHAR(8233)+NCHAR(8239)+NCHAR(8287)+NCHAR(12288), REPLICATE(N' ',24))))) > 0 AND
+        LEN(LTRIM(RTRIM(TRANSLATE(ManagerName, NCHAR(9)+NCHAR(10)+NCHAR(11)+NCHAR(12)+NCHAR(13)+NCHAR(133)+NCHAR(160)+NCHAR(5760)+NCHAR(8192)+NCHAR(8193)+NCHAR(8194)+NCHAR(8195)+NCHAR(8196)+NCHAR(8197)+NCHAR(8198)+NCHAR(8199)+NCHAR(8200)+NCHAR(8201)+NCHAR(8202)+NCHAR(8232)+NCHAR(8233)+NCHAR(8239)+NCHAR(8287)+NCHAR(12288), REPLICATE(N' ',24))))) > 0 AND
+        LEN(LTRIM(RTRIM(TRANSLATE(ManagerContact, NCHAR(9)+NCHAR(10)+NCHAR(11)+NCHAR(12)+NCHAR(13)+NCHAR(133)+NCHAR(160)+NCHAR(5760)+NCHAR(8192)+NCHAR(8193)+NCHAR(8194)+NCHAR(8195)+NCHAR(8196)+NCHAR(8197)+NCHAR(8198)+NCHAR(8199)+NCHAR(8200)+NCHAR(8201)+NCHAR(8202)+NCHAR(8232)+NCHAR(8233)+NCHAR(8239)+NCHAR(8287)+NCHAR(12288), REPLICATE(N' ',24))))) > 0);
+    ALTER TABLE dbo.WarehouseUsers DROP CONSTRAINT CK_WarehouseUsers_Role;
+    ALTER TABLE dbo.WarehouseUsers ADD CONSTRAINT CK_WarehouseUsers_Role CHECK (Role IN (0, 1, 2, 3));
+    ALTER TABLE dbo.WarehouseUsers ADD IsActive bit NOT NULL CONSTRAINT DF_WarehouseUsers_IsActive DEFAULT 1;
+    -- Учётные записи с историей не уничтожаются: удаление блокирует вход и сохраняет автора операций.
+    CREATE TABLE dbo.AuditStreams (
+        StreamId uniqueidentifier NOT NULL CONSTRAINT PK_AuditStreams PRIMARY KEY,
+        LastWrittenEventId bigint NOT NULL CONSTRAINT DF_AuditStreams_LastWritten DEFAULT 0
+    );
+    CREATE TABLE dbo.AuditEvents (
+        Id bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_AuditEvents PRIMARY KEY,
+        StreamId uniqueidentifier NOT NULL CONSTRAINT FK_AuditEvents_Stream REFERENCES dbo.AuditStreams(StreamId),
+        OccurredAtUtc datetime2(7) NOT NULL CONSTRAINT DF_AuditEvents_Time DEFAULT SYSUTCDATETIME(),
+        ActorId int NULL,
+        ActorLogin nvarchar(80) NOT NULL,
+        ActorName nvarchar(200) NOT NULL,
+        ActorRole nvarchar(80) NOT NULL,
+        Action nvarchar(120) NOT NULL,
+        Entity nvarchar(80) NOT NULL,
+        EntityId nvarchar(80) NOT NULL,
+        Details nvarchar(max) NOT NULL
+    );
+    CREATE INDEX IX_AuditEvents_Stream ON dbo.AuditEvents(StreamId, Id);
+    UPDATE dbo.WarehouseSchemaVersion SET Version=2 WHERE Id=1;
 END
+SELECT @created;

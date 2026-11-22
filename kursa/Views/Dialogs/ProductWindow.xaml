@@ -9,7 +9,7 @@
             <TextBlock Text="Единица измерения" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="UnitBox" MaxLength="30"/>
             <TextBlock Text="Закупочная цена, BYN" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="PurchaseBox"/>
             <TextBlock Text="Продажная цена, BYN" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="SaleBox"/>
-            <TextBlock Text="Не более двух знаков после запятой. Цены указываются в белорусских рублях." Style="{StaticResource CaptionText}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+            <TextBlock Text="Обе цены обязательны и должны быть больше нуля. Не более двух знаков после запятой; валюта — BYN." Style="{StaticResource CaptionText}" Margin="0,10,0,0" TextWrapping="Wrap"/>
         </StackPanel>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Style="{StaticResource BaseButton}" Content="Отмена" IsCancel="True"/><Button Content="Сохранить" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0"/>

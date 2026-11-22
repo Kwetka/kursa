@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Склад · Управление запасами" Width="1450" Height="900"
         MinWidth="1050" MinHeight="700" WindowStartupLocation="CenterScreen">
     <Grid>
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <Border Background="#10213B" Padding="20,13">
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -17,7 +17,14 @@
                 </StackPanel>
             </DockPanel>
         </Border>
-        <TabControl x:Name="Tabs" Grid.Row="1" Margin="10,10,10,0" SelectionChanged="Tabs_SelectionChanged">
+        <StackPanel Grid.Row="1" Margin="10,8,10,0">
+            <Border x:Name="AuditWarning" Background="#FFF0EE" BorderBrush="#D58A83" BorderThickness="1" CornerRadius="4" Padding="10,6" Visibility="Collapsed" Margin="0,0,0,4"><DockPanel>
+                <Button DockPanel.Dock="Right" Content="Журнал" Style="{StaticResource BaseButton}" Click="Audit_Click" Margin="8,0,0,0"/>
+                <TextBlock x:Name="AuditWarningText" Foreground="#9D2525" TextWrapping="Wrap" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            </DockPanel></Border>
+            <Border x:Name="LegacyWarning" Background="#FFF8E5" BorderBrush="#E6CD8B" BorderThickness="1" CornerRadius="4" Padding="10,6" Visibility="Collapsed"><TextBlock x:Name="LegacyWarningText" Foreground="#775600" TextWrapping="Wrap"/></Border>
+        </StackPanel>
+        <TabControl x:Name="Tabs" Grid.Row="2" Margin="10,10,10,0" SelectionChanged="Tabs_SelectionChanged">
             <TabItem x:Name="ProductsTab" Header="Номенклатура"><ContentControl x:Name="ProductsHost"/></TabItem>
             <TabItem x:Name="WarehousesTab" Header="Склады"><ContentControl x:Name="WarehousesHost"/></TabItem>
             <TabItem x:Name="CounterpartiesTab" Header="Контрагенты"><ContentControl x:Name="CounterpartiesHost"/></TabItem>
@@ -25,10 +32,12 @@
             <TabItem x:Name="StocksTab" Header="Остатки"><ContentControl x:Name="StocksHost"/></TabItem>
             <TabItem x:Name="TurnoverTab" Header="Оборачиваемость"><ContentControl x:Name="TurnoverHost"/></TabItem>
             <TabItem x:Name="ReportsTab" Header="Отчёты и диаграммы"><ContentControl x:Name="ReportsHost"/></TabItem>
+            <TabItem x:Name="UsersTab" Header="Пользователи"><ContentControl x:Name="UsersHost"/></TabItem>
+            <TabItem x:Name="AuditTab" Header="Журнал действий"><ContentControl x:Name="AuditHost"/></TabItem>
         </TabControl>
-        <Border Grid.Row="2" Background="#EDF1F6" Padding="20,7"><DockPanel>
+        <Border Grid.Row="3" Background="#EDF1F6" Padding="20,7"><DockPanel>
             <TextBlock DockPanel.Dock="Right" Text="Валюта: BYN · время операций: SQL Server" Style="{StaticResource CaptionText}" HorizontalAlignment="Right"/>
-            <TextBlock Text="SQL Server подключён · данные сохраняются в базе" Style="{StaticResource CaptionText}"/>
+            <TextBlock x:Name="AuditFooter" Text="SQL Server подключён · журнал не проверен" Style="{StaticResource CaptionText}"/>
         </DockPanel></Border>
     </Grid>
 </Window>

@@ -2,14 +2,20 @@
     <Grid Margin="18">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,16">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel x:Name="ActionsPanel" DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="+ Добавить" Style="{StaticResource PrimaryButton}" Click="Add_Click"/><Button Style="{StaticResource BaseButton}" Content="Изменить" Click="Edit_Click"/>
                 <Button Content="Удалить" Style="{StaticResource DangerButton}" Click="Delete_Click" Margin="0"/>
             </StackPanel>
             <StackPanel><TextBlock Text="Контрагенты" Style="{StaticResource TitleText}"/><TextBlock Text="Поставщики и покупатели" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/></StackPanel>
         </DockPanel>
-        <Border Grid.Row="1" Style="{StaticResource PanelCard}" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal"><TextBlock Text="Поиск" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,12,0"/><TextBox x:Name="SearchBox" Width="310" TextChanged="Search_Changed"/></StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource PanelCard}" Margin="0,0,0,12" Padding="12,8">
+            <Expander x:Name="FiltersExpander" Header="Фильтры" IsExpanded="False">
+                <WrapPanel Margin="0,12,0,2">
+                    <StackPanel Style="{StaticResource FilterField}" Width="310"><TextBlock Text="Поиск" Style="{StaticResource FieldLabel}"/>
+                        <TextBox x:Name="SearchBox" Width="310" ToolTip="Название или тип контрагента" KeyDown="Search_KeyDown"/></StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,0,10"><Button x:Name="ApplyButton" Style="{StaticResource PrimaryButton}" Click="Apply_Click"/><Button Style="{StaticResource BaseButton}" Content="Сбросить" Click="Reset_Click"/></StackPanel>
+                </WrapPanel>
+            </Expander>
         </Border>
         <DataGrid x:Name="GridView" Grid.Row="2" MouseDoubleClick="Edit_Click"><DataGrid.Columns>
             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="70"/><DataGridTextColumn Header="Наименование" Binding="{Binding Name}" Width="3*"/>

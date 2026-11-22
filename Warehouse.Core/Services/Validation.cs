@@ -19,8 +19,8 @@ public static class Validation
     }
     public static void Price(decimal value, string field)
     {
-        if (value < 0 || value > 1_000_000_000m || decimal.Round(value, 2) != value)
-            throw new ArgumentException($"{field}: от 0 до 1 000 000 000 BYN, не более двух знаков после запятой.");
+        if (value <= 0 || value > 1_000_000_000m || decimal.Round(value, 2) != value)
+            throw new ArgumentException($"{field}: больше нуля и не больше 1 000 000 000 BYN, не более двух знаков после запятой.");
     }
     public static void Quantity(decimal value)
     {
@@ -32,9 +32,10 @@ public static class Validation
         if (fromInclusive.HasValue && toExclusive.HasValue && fromInclusive.Value >= toExclusive.Value)
             throw new ArgumentException("Начало периода должно быть раньше конца.");
     }
-    public static void Editor(AppUser actor)
+    public static void Password(string? password)
     {
-        if (!actor.CanManageReferences) throw new UnauthorizedAccessException("У вашей роли нет доступа к справочникам.");
+        if (password is null || password.Length < 8 || password.Length > 200 || string.IsNullOrWhiteSpace(password))
+            throw new ArgumentException("Новый пароль должен содержать от 8 до 200 символов.");
     }
     public static void Operation(OperationInput operation)
     {
