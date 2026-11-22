@@ -1,0 +1,25 @@
+<UserControl x:Class="kursa.Views.ReportsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:oxy="http://oxyplot.org/wpf">
+    <Grid Margin="18">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,15"><TextBlock Text="Отчёты и диаграммы" Style="{StaticResource TitleText}"/>
+            <TextBlock Text="Диаграммы отображаются внутри программы; текст отчёта можно сохранить отдельно" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/></StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource PanelCard}" Margin="0,0,0,12">
+            <WrapPanel><Button Content="Отчёт по остаткам" Style="{StaticResource PrimaryButton}" Click="Stock_Click"/>
+                <Button Style="{StaticResource BaseButton}" Content="Отчёт по оборачиваемости" Click="Turnover_Click"/><Button Style="{StaticResource BaseButton}" Content="Сохранить текст .txt" Click="Save_Click"/>
+                <TextBlock Text="Отчёты используют фильтр остатков и последний расчёт оборачиваемости." Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="8,0,0,0"/></WrapPanel>
+        </Border>
+        <Grid Grid.Row="2"><Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Border Style="{StaticResource PanelCard}" Padding="10"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <TextBlock Text="ДИАГРАММА" FontWeight="Bold" FontSize="12" Foreground="#475569" Margin="6,4,0,8"/>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <oxy:PlotView x:Name="Chart" Height="380" Background="White"/>
+                </ScrollViewer>
+            </Grid></Border>
+            <Border Grid.Column="2" Style="{StaticResource PanelCard}" Padding="10"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <TextBlock Text="ТЕКСТ ОТЧЁТА" FontWeight="Bold" FontSize="12" Foreground="#475569" Margin="6,4,0,8"/>
+                <TextBox x:Name="ReportBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas" FontSize="12"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" VerticalContentAlignment="Top" BorderThickness="0" Text="Выберите тип отчёта."/>
+            </Grid></Border>
+        </Grid>
+    </Grid>
+</UserControl>

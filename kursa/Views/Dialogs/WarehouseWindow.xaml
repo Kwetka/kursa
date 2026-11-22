@@ -1,0 +1,18 @@
+<Window Language="ru-BY" x:Class="kursa.Views.Dialogs.WarehouseWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Склад" Width="520" Height="510"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="28">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock x:Name="Heading" Style="{StaticResource TitleText}"/>
+        <StackPanel Grid.Row="1" Margin="0,22,0,0">
+            <TextBlock Text="Наименование" Style="{StaticResource FieldLabel}"/><TextBox x:Name="NameBox" MaxLength="200"/>
+            <TextBlock Text="Адрес склада" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="AddressBox" MaxLength="400"/>
+            <TextBlock Text="Заведующий · ФИО" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="ManagerBox" MaxLength="200"/>
+            <TextBlock Text="Контакт заведующего · телефон / email" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="ContactBox" MaxLength="200"/>
+            <TextBlock Text="Адрес и сведения о заведующем можно заполнить позднее." Style="{StaticResource CaptionText}" Margin="0,10,0,0"/>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource BaseButton}" Content="Отмена" IsCancel="True"/><Button Content="Сохранить" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0"/>
+        </StackPanel>
+    </Grid>
+</Window>

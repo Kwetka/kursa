@@ -1,0 +1,26 @@
+<Window Language="ru-BY" x:Class="kursa.Views.Dialogs.OperationWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Складская операция" Width="540" Height="690" MinHeight="550"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize">
+    <Grid Margin="28">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock x:Name="Heading" Style="{StaticResource TitleText}"/>
+            <TextBlock Text="Дата и время проведения назначаются SQL Server." Style="{StaticResource CaptionText}" Margin="0,5,0,0"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,20,0,0">
+            <StackPanel>
+                <TextBlock Text="Товар" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="ProductBox" DisplayMemberPath="Name"/>
+                <TextBlock Text="Количество" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="QuantityBox" Text="1"/>
+                <TextBlock Text="До трёх знаков после запятой" Style="{StaticResource CaptionText}" Margin="0,5,0,0"/>
+                <StackPanel x:Name="FromPanel" Margin="0,14,0,0"><TextBlock Text="Со склада" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="FromBox" DisplayMemberPath="Name"/></StackPanel>
+                <StackPanel x:Name="ToPanel" Margin="0,14,0,0"><TextBlock Text="На склад" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="ToBox" DisplayMemberPath="Name"/></StackPanel>
+                <StackPanel x:Name="PartyPanel" Margin="0,14,0,0"><TextBlock x:Name="PartyLabel" Style="{StaticResource FieldLabel}"/><ComboBox x:Name="PartyBox" DisplayMemberPath="Name"/></StackPanel>
+                <TextBlock Text="Комментарий" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="CommentBox" MaxLength="500"/>
+                <TextBlock Text="Если список пуст, сначала добавьте товары, склады и контрагентов в справочниках." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Style="{StaticResource BaseButton}" Content="Отмена" IsCancel="True"/><Button Content="Провести" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0"/>
+        </StackPanel>
+    </Grid>
+</Window>

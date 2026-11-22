@@ -1,16 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>kursa</RootNamespace>
+    <AssemblyName>kursa</AssemblyName>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="EcoCore" Version="7.2.0.17642" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <ProjectReference Include="..\Warehouse.Core\Warehouse.Core.csproj" />
+    <PackageReference Include="OxyPlot.Wpf" Version="2.2.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.23" />
   </ItemGroup>
-
 </Project>

@@ -1,0 +1,34 @@
+<Window Language="ru-BY" x:Class="kursa.Views.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Склад · Управление запасами" Width="1450" Height="900"
+        MinWidth="1050" MinHeight="700" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Border Background="#10213B" Padding="20,13">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Margin="0,0,16,0" VerticalAlignment="Center"><TextBlock x:Name="UserText" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                        <TextBlock x:Name="RoleText" Foreground="#A8BED8" FontSize="11" HorizontalAlignment="Right"/></StackPanel>
+                    <Button Style="{StaticResource BaseButton}" Content="Сменить пароль" Click="Password_Click"/><Button Style="{StaticResource BaseButton}" Content="Выход из учётной записи" Click="Logout_Click" Margin="0"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#1769D2" CornerRadius="6" Width="40" Height="40" Margin="0,0,12,0"><TextBlock Text="С" Foreground="White" FontSize="21" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+                    <StackPanel><TextBlock Text="СКЛАД" Foreground="White" FontWeight="Bold" FontSize="16"/>
+                        <TextBlock Text="Управление запасами и аналитика" Foreground="#A8BED8" FontSize="11"/></StackPanel>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <TabControl x:Name="Tabs" Grid.Row="1" Margin="10,10,10,0" SelectionChanged="Tabs_SelectionChanged">
+            <TabItem x:Name="ProductsTab" Header="Номенклатура"><ContentControl x:Name="ProductsHost"/></TabItem>
+            <TabItem x:Name="WarehousesTab" Header="Склады"><ContentControl x:Name="WarehousesHost"/></TabItem>
+            <TabItem x:Name="CounterpartiesTab" Header="Контрагенты"><ContentControl x:Name="CounterpartiesHost"/></TabItem>
+            <TabItem x:Name="OperationsTab" Header="Операции"><ContentControl x:Name="OperationsHost"/></TabItem>
+            <TabItem x:Name="StocksTab" Header="Остатки"><ContentControl x:Name="StocksHost"/></TabItem>
+            <TabItem x:Name="TurnoverTab" Header="Оборачиваемость"><ContentControl x:Name="TurnoverHost"/></TabItem>
+            <TabItem x:Name="ReportsTab" Header="Отчёты и диаграммы"><ContentControl x:Name="ReportsHost"/></TabItem>
+        </TabControl>
+        <Border Grid.Row="2" Background="#EDF1F6" Padding="20,7"><DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="Валюта: BYN · время операций: SQL Server" Style="{StaticResource CaptionText}" HorizontalAlignment="Right"/>
+            <TextBlock Text="SQL Server подключён · данные сохраняются в базе" Style="{StaticResource CaptionText}"/>
+        </DockPanel></Border>
+    </Grid>
+</Window>

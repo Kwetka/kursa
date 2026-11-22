@@ -1,0 +1,21 @@
+<Window Language="ru-BY" x:Class="kursa.Views.LoginWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Вход · Склад" Width="490" Height="500"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <Grid Margin="34">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock Text="СКЛАД / АНАЛИТИКА" FontWeight="Bold" Foreground="#1769D2" FontSize="12"/>
+            <TextBlock Text="Добро пожаловать" Style="{StaticResource TitleText}" Margin="0,10,0,4"/>
+            <TextBlock Text="Войдите в учётную запись приложения" Style="{StaticResource CaptionText}"/>
+        </StackPanel>
+        <StackPanel Grid.Row="1" Margin="0,28,0,0">
+            <TextBlock Text="Логин" Style="{StaticResource FieldLabel}"/><TextBox x:Name="LoginBox" Text="admin" MaxLength="80"/>
+            <TextBlock Text="Пароль" Style="{StaticResource FieldLabel}" Margin="0,15,0,5"/><PasswordBox x:Name="PasswordBox" MaxLength="200"/>
+            <Button Content="Войти" Style="{StaticResource PrimaryButton}" Click="Login_Click" IsDefault="True" Margin="0,20,0,0"/>
+            <Border Background="#EDF4FE" CornerRadius="4" Padding="12" Margin="0,20,0,0">
+                <TextBlock Text="Только для новой базы: начальные учебные учётные записи:&#10;admin / admin   ·   manager / 123   ·   store / 123&#10;После первого входа смените пароль; старый пароль перестанет действовать." TextWrapping="Wrap" Foreground="#355474" FontSize="12"/>
+            </Border>
+        </StackPanel>
+        <Button Style="{StaticResource BaseButton}" Grid.Row="2" Content="Настроить подключение SQL Server" Click="Connection_Click" HorizontalAlignment="Left" Margin="0"/>
+    </Grid>
+</Window>

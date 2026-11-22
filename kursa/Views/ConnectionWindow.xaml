@@ -1,0 +1,36 @@
+<Window Language="ru-BY" x:Class="kursa.Views.ConnectionWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Подключение к SQL Server"
+        Width="600" Height="650" MinHeight="590" WindowStartupLocation="CenterScreen" ResizeMode="CanResize">
+    <Grid Margin="28">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock Text="Подключение к базе данных" Style="{StaticResource TitleText}"/>
+            <TextBlock Text="Microsoft SQL Server / SQL Server Express / LocalDB" Style="{StaticResource CaptionText}" Margin="0,5,0,20"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Сервер или экземпляр" Style="{StaticResource FieldLabel}"/>
+                <TextBox x:Name="ServerBox"/>
+                <TextBlock Text="Примеры: (localdb)\MSSQLLocalDB или .\SQLEXPRESS" Style="{StaticResource CaptionText}" Margin="0,5,0,15"/>
+                <TextBlock Text="База данных" Style="{StaticResource FieldLabel}"/><TextBox x:Name="DatabaseBox"/>
+                <TextBlock Text="При наличии прав приложение создаст отсутствующую базу и таблицы." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,5,0,15"/>
+                <TextBlock Text="Способ входа на сервер" Style="{StaticResource FieldLabel}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,3,0,12">
+                    <RadioButton x:Name="WindowsAuth" Content="Windows" GroupName="auth" Margin="0,0,24,0"/>
+                    <RadioButton x:Name="SqlAuth" Content="SQL Server" GroupName="auth"/>
+                </StackPanel>
+                <TextBlock Text="Логин SQL Server" Style="{StaticResource FieldLabel}"/>
+                <TextBox x:Name="LoginBox" IsEnabled="{Binding IsChecked, ElementName=SqlAuth}"/>
+                <TextBlock Text="Пароль SQL Server" Style="{StaticResource FieldLabel}" Margin="0,12,0,5"/>
+                <PasswordBox x:Name="PasswordBox" IsEnabled="{Binding IsChecked, ElementName=SqlAuth}"/>
+                <CheckBox x:Name="TrustCertificateBox" Content="Доверять сертификату сервера (для локального LocalDB / Express)" Margin="0,18,0,8"/>
+                <TextBlock Text="Для удалённого сервера используйте проверяемый сертификат и снимите этот флажок. Настройки шифруются средствами Windows для текущего пользователя."
+                           Style="{StaticResource CaptionText}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Style="{StaticResource BaseButton}" Content="Отмена" IsCancel="True"/>
+            <Button Content="Подключить и сохранить" Style="{StaticResource PrimaryButton}" Click="Connect_Click" Margin="0"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,16 @@
+<Window Language="ru-BY" x:Class="kursa.Views.Dialogs.CounterpartyWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Контрагент" Width="490" Height="330"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="28">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBlock x:Name="Heading" Style="{StaticResource TitleText}"/>
+        <StackPanel Grid.Row="1" Margin="0,22,0,0">
+            <TextBlock Text="Наименование" Style="{StaticResource FieldLabel}"/><TextBox x:Name="NameBox" MaxLength="200"/>
+            <TextBlock Text="Тип контрагента" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/>
+            <ComboBox x:Name="TypeBox"><ComboBoxItem Content="Поставщик"/><ComboBoxItem Content="Покупатель"/></ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource BaseButton}" Content="Отмена" IsCancel="True"/><Button Content="Сохранить" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0"/>
+        </StackPanel>
+    </Grid>
+</Window>
