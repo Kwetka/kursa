@@ -1,4 +1,5 @@
--- Схема версии 2. Создание и недеструктивная миграция выполняются в одной транзакции.
+-- Схема версии 3 (документы с несколькими позициями и реквизиты ТТН).
+-- Создание и недеструктивная миграция v1 → v2 → v3 выполняются в одной транзакции.
 DECLARE @lockResult int;
 EXEC @lockResult = sys.sp_getapplock @Resource = N'WarehouseCourse.Schema',
     @LockMode = N'Exclusive', @LockOwner = N'Transaction', @LockTimeout = 15000;
@@ -81,7 +82,7 @@ BEGIN
     INSERT INTO dbo.WarehouseSchemaVersion(Id, Version) VALUES (1, 1);
     SET @created = 1;
 END
-ELSE IF NOT EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id = 1 AND Version IN (1, 2))
+ELSE IF NOT EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id = 1 AND Version IN (1, 2, 3))
     THROW 51002, N'Версия базы данных несовместима с этой версией приложения.', 1;
 
 IF EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id=1 AND Version=1)
@@ -118,5 +119,94 @@ BEGIN
     );
     CREATE INDEX IX_AuditEvents_Stream ON dbo.AuditEvents(StreamId, Id);
     UPDATE dbo.WarehouseSchemaVersion SET Version=2 WHERE Id=1;
+END
+IF EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id=1 AND Version=2)
+BEGIN
+    -- Реквизиты своей организации (грузоотправитель в ТТН). Одна строка, заполняет администратор.
+    CREATE TABLE dbo.OrganizationProfile (
+        Id int NOT NULL CONSTRAINT PK_OrganizationProfile PRIMARY KEY CONSTRAINT CK_OrganizationProfile_Single CHECK (Id = 1),
+        Name nvarchar(300) NOT NULL CONSTRAINT DF_OrganizationProfile_Name DEFAULT N'',
+        Unp nvarchar(9) NOT NULL CONSTRAINT DF_OrganizationProfile_Unp DEFAULT N'',
+        Address nvarchar(400) NOT NULL CONSTRAINT DF_OrganizationProfile_Address DEFAULT N'',
+        Phone nvarchar(100) NOT NULL CONSTRAINT DF_OrganizationProfile_Phone DEFAULT N'',
+        ReleaseAllowedBy nvarchar(200) NOT NULL CONSTRAINT DF_OrganizationProfile_Release DEFAULT N'',
+        DefaultVatRate decimal(5,2) NOT NULL CONSTRAINT DF_OrganizationProfile_Vat DEFAULT 20
+            CONSTRAINT CK_OrganizationProfile_Vat CHECK (DefaultVatRate >= 0 AND DefaultVatRate <= 100)
+    );
+    INSERT dbo.OrganizationProfile(Id) VALUES (1);
+
+    -- Товар: ставка НДС (начисляется сверху на цену без НДС), грузовые места и масса для граф 10–11 ТТН.
+    ALTER TABLE dbo.Products ADD
+        VatRate decimal(5,2) NOT NULL CONSTRAINT DF_Products_VatRate DEFAULT 20
+            CONSTRAINT CK_Products_VatRate CHECK (VatRate >= 0 AND VatRate <= 100),
+        UnitsPerPlace decimal(18,3) NULL CONSTRAINT CK_Products_UnitsPerPlace CHECK (UnitsPerPlace > 0 AND UnitsPerPlace <= 1000000000),
+        UnitMassKg decimal(18,3) NULL CONSTRAINT CK_Products_UnitMass CHECK (UnitMassKg > 0 AND UnitMassKg <= 1000000000);
+
+    -- Контрагент: реквизиты для шапки ТТН.
+    ALTER TABLE dbo.Counterparties ADD
+        Unp nvarchar(9) NOT NULL CONSTRAINT DF_Counterparties_Unp DEFAULT N'',
+        Address nvarchar(400) NOT NULL CONSTRAINT DF_Counterparties_Address DEFAULT N'',
+        DeliveryAddress nvarchar(400) NOT NULL CONSTRAINT DF_Counterparties_Delivery DEFAULT N'',
+        Phone nvarchar(100) NOT NULL CONSTRAINT DF_Counterparties_Phone DEFAULT N'',
+        Contract nvarchar(200) NOT NULL CONSTRAINT DF_Counterparties_Contract DEFAULT N'';
+
+    -- Документ (шапка ТТН). Реквизиты сторон сохраняются снимком на момент проведения,
+    -- чтобы последующее изменение справочников не меняло уже выписанные накладные.
+    CREATE TABLE dbo.StockDocuments (
+        Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_StockDocuments PRIMARY KEY,
+        Kind tinyint NOT NULL CONSTRAINT CK_StockDocuments_Kind CHECK (Kind IN (0,1,2)),
+        Number nvarchar(30) NOT NULL CONSTRAINT DF_StockDocuments_Number DEFAULT N'',
+        DocumentDate date NULL,
+        OccurredAt datetime2(7) NOT NULL CONSTRAINT DF_StockDocuments_OccurredAt DEFAULT SYSDATETIME(),
+        FromWarehouseId int NULL CONSTRAINT FK_StockDocuments_From REFERENCES dbo.Warehouses(Id),
+        ToWarehouseId int NULL CONSTRAINT FK_StockDocuments_To REFERENCES dbo.Warehouses(Id),
+        CounterpartyId int NULL CONSTRAINT FK_StockDocuments_Counterparty REFERENCES dbo.Counterparties(Id),
+        UserId int NOT NULL CONSTRAINT FK_StockDocuments_User REFERENCES dbo.WarehouseUsers(Id),
+        Comment nvarchar(500) NOT NULL CONSTRAINT DF_StockDocuments_Comment DEFAULT N'',
+        ShipperName nvarchar(300) NOT NULL CONSTRAINT DF_StockDocuments_ShipperName DEFAULT N'',
+        ShipperUnp nvarchar(9) NOT NULL CONSTRAINT DF_StockDocuments_ShipperUnp DEFAULT N'',
+        ShipperAddress nvarchar(400) NOT NULL CONSTRAINT DF_StockDocuments_ShipperAddress DEFAULT N'',
+        ConsigneeName nvarchar(300) NOT NULL CONSTRAINT DF_StockDocuments_ConsigneeName DEFAULT N'',
+        ConsigneeUnp nvarchar(9) NOT NULL CONSTRAINT DF_StockDocuments_ConsigneeUnp DEFAULT N'',
+        ConsigneeAddress nvarchar(400) NOT NULL CONSTRAINT DF_StockDocuments_ConsigneeAddress DEFAULT N'',
+        PayerName nvarchar(300) NOT NULL CONSTRAINT DF_StockDocuments_PayerName DEFAULT N'',
+        PayerUnp nvarchar(9) NOT NULL CONSTRAINT DF_StockDocuments_PayerUnp DEFAULT N'',
+        Vehicle nvarchar(100) NOT NULL CONSTRAINT DF_StockDocuments_Vehicle DEFAULT N'',
+        Trailer nvarchar(100) NOT NULL CONSTRAINT DF_StockDocuments_Trailer DEFAULT N'',
+        Driver nvarchar(200) NOT NULL CONSTRAINT DF_StockDocuments_Driver DEFAULT N'',
+        WaybillNumber nvarchar(50) NOT NULL CONSTRAINT DF_StockDocuments_Waybill DEFAULT N'',
+        Basis nvarchar(300) NOT NULL CONSTRAINT DF_StockDocuments_Basis DEFAULT N'',
+        LoadingPoint nvarchar(400) NOT NULL CONSTRAINT DF_StockDocuments_Loading DEFAULT N'',
+        UnloadingPoint nvarchar(400) NOT NULL CONSTRAINT DF_StockDocuments_Unloading DEFAULT N'',
+        ReleaseAllowedBy nvarchar(200) NOT NULL CONSTRAINT DF_StockDocuments_Release DEFAULT N'',
+        HandedOverBy nvarchar(200) NOT NULL CONSTRAINT DF_StockDocuments_HandedOver DEFAULT N'',
+        LegacyOperationId int NULL,
+        CONSTRAINT CK_StockDocuments_Routing CHECK (
+            (Kind = 0 AND FromWarehouseId IS NULL AND ToWarehouseId IS NOT NULL AND CounterpartyId IS NOT NULL) OR
+            (Kind = 1 AND FromWarehouseId IS NOT NULL AND ToWarehouseId IS NULL AND CounterpartyId IS NOT NULL) OR
+            (Kind = 2 AND FromWarehouseId IS NOT NULL AND ToWarehouseId IS NOT NULL AND FromWarehouseId <> ToWarehouseId AND CounterpartyId IS NULL)
+        )
+    );
+    CREATE INDEX IX_StockDocuments_Date ON dbo.StockDocuments(OccurredAt DESC, Id DESC);
+    CREATE INDEX IX_StockDocuments_Number ON dbo.StockDocuments(Number, Kind);
+
+    -- Позиция документа: цена без НДС, скидка, ставка НДС, грузовые места, масса, примечание (Comment).
+    ALTER TABLE dbo.StockOperations ADD
+        DocumentId int NULL,
+        Price decimal(18,2) NULL CONSTRAINT CK_StockOperations_Price CHECK (Price > 0 AND Price <= 1000000000),
+        DiscountPercent decimal(5,2) NULL CONSTRAINT CK_StockOperations_Discount CHECK (DiscountPercent >= 0 AND DiscountPercent < 100),
+        VatRate decimal(5,2) NULL CONSTRAINT CK_StockOperations_VatRate CHECK (VatRate >= 0 AND VatRate <= 100),
+        CargoPlaces decimal(18,3) NULL CONSTRAINT CK_StockOperations_Places CHECK (CargoPlaces >= 0 AND CargoPlaces <= 1000000000),
+        CargoMassKg decimal(18,3) NULL CONSTRAINT CK_StockOperations_Mass CHECK (CargoMassKg >= 0 AND CargoMassKg <= 1000000000);
+
+    -- Каждая прежняя однотоварная операция становится документом из одной позиции.
+    -- Новые столбцы существующих таблиц доступны только после компиляции пакета, поэтому DML — через EXEC.
+    INSERT dbo.StockDocuments(Kind, OccurredAt, FromWarehouseId, ToWarehouseId, CounterpartyId, UserId, Comment, LegacyOperationId)
+        SELECT Kind, OccurredAt, FromWarehouseId, ToWarehouseId, CounterpartyId, UserId, N'', Id FROM dbo.StockOperations;
+    EXEC(N'UPDATE o SET DocumentId = d.Id FROM dbo.StockOperations o JOIN dbo.StockDocuments d ON d.LegacyOperationId = o.Id;');
+    EXEC(N'ALTER TABLE dbo.StockOperations ALTER COLUMN DocumentId int NOT NULL;');
+    EXEC(N'ALTER TABLE dbo.StockOperations ADD CONSTRAINT FK_StockOperations_Document FOREIGN KEY (DocumentId) REFERENCES dbo.StockDocuments(Id);');
+    EXEC(N'CREATE INDEX IX_StockOperations_Document ON dbo.StockOperations(DocumentId, Id);');
+    UPDATE dbo.WarehouseSchemaVersion SET Version=3 WHERE Id=1;
 END
 SELECT @created;

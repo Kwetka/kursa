@@ -15,7 +15,11 @@ public static class AuditFormatter
         ["Operation"]="Операция",["Kind"]="Тип",["ProductId"]="ID товара",["Quantity"]="Количество",
         ["FromWarehouseId"]="ID исходного склада",["ToWarehouseId"]="ID склада назначения",["CounterpartyId"]="ID контрагента",
         ["Comment"]="Комментарий",["SourceBefore"]="Остаток на исходном складе до",["SourceAfter"]="Остаток на исходном складе после",
-        ["DestinationBefore"]="Остаток на складе назначения до",["DestinationAfter"]="Остаток на складе назначения после"
+        ["DestinationBefore"]="Остаток на складе назначения до",["DestinationAfter"]="Остаток на складе назначения после",
+        ["Number"]="Номер документа",["FromWarehouse"]="Склад-отправитель",["ToWarehouse"]="Склад-получатель",["OccurredAt"]="Время проведения",
+        ["Unp"]="УНП",["DeliveryAddress"]="Адрес разгрузки",["Phone"]="Телефон",["Contract"]="Договор (основание отпуска)",
+        ["VatRate"]="Ставка НДС, %",["UnitsPerPlace"]="Единиц в грузовом месте",["UnitMassKg"]="Масса единицы, кг",
+        ["ReleaseAllowedBy"]="Отпуск разрешил",["DefaultVatRate"]="Ставка НДС по умолчанию, %"
     };
     public static string Details(string json)
     {
@@ -47,6 +51,7 @@ public static class AuditFormatter
             if (property=="Role" && Enum.IsDefined((UserRole)number)) { text.Append(UserRoles.Name((UserRole)number)); return; }
             if (property=="Kind" && Enum.IsDefined((OperationKind)number)) { text.Append(number switch {0=>"Приход",1=>"Реализация",2=>"Перемещение",_=>number.ToString()}); return; }
         }
+        if (value.ValueKind==JsonValueKind.String && property=="OccurredAt" && value.TryGetDateTime(out var time)) { text.Append(time.ToString("dd.MM.yyyy HH:mm:ss")); return; }
         text.Append(value.ValueKind==JsonValueKind.String ? value.GetString() : value.GetRawText());
     }
 }

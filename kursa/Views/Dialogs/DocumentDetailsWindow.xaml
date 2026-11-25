@@ -1,0 +1,43 @@
+<Window Language="ru-BY" x:Class="kursa.Views.Dialogs.DocumentDetailsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Документ" Width="1250" Height="780" MinWidth="900" MinHeight="500"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize">
+    <Grid Margin="22">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock x:Name="Heading" Style="{StaticResource TitleText}"/>
+            <TextBlock x:Name="SubHeading" Style="{StaticResource CaptionText}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource PanelCard}" Margin="0,12,0,12" Padding="15,10">
+            <Expander x:Name="DetailsExpander" Header="Реквизиты документа и ТТН" IsExpanded="True">
+                <Grid x:Name="DetailsGrid" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                </Grid>
+            </Expander>
+        </Border>
+        <DataGrid x:Name="LinesGrid" Grid.Row="2" HorizontalScrollBarVisibility="Auto">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="42"/>
+                <DataGridTextColumn Header="Наименование" Binding="{Binding ProductName}" Width="230"/>
+                <DataGridTextColumn Header="Ед." Binding="{Binding Unit}" Width="50"/>
+                <DataGridTextColumn Header="Количество" Binding="{Binding Quantity, StringFormat={}{0:N3}}" Width="100"/>
+                <DataGridTextColumn Header="Цена без НДС" Binding="{Binding Price, StringFormat={}{0:N2}}" Width="105"/>
+                <DataGridTextColumn Header="Стоимость" Binding="{Binding Amount, StringFormat={}{0:N2}}" Width="105"/>
+                <DataGridTextColumn Header="НДС, %" Binding="{Binding VatRateDisplay}" Width="75"/>
+                <DataGridTextColumn Header="Сумма НДС" Binding="{Binding VatAmount, StringFormat={}{0:N2}}" Width="95"/>
+                <DataGridTextColumn Header="С НДС" Binding="{Binding AmountWithVat, StringFormat={}{0:N2}}" Width="105"/>
+                <DataGridTextColumn Header="Груз. мест" Binding="{Binding CargoPlaces, StringFormat={}{0:0.###}}" Width="85"/>
+                <DataGridTextColumn Header="Масса, т" Binding="{Binding CargoMassTonnes, StringFormat={}{0:0.000}}" Width="85"/>
+                <DataGridTextColumn Header="Примечание" Binding="{Binding NoteDisplay}" Width="200"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <TextBlock x:Name="TotalsText" Grid.Row="3" FontWeight="SemiBold" Margin="0,10,0,0" TextWrapping="Wrap"/>
+        <DockPanel Grid.Row="4" Margin="0,14,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button x:Name="HistoryButton" Content="История товара" Style="{StaticResource BaseButton}" Click="History_Click" ToolTip="Все операции по товару выбранной строки"/>
+                <Button x:Name="PrintButton" Content="Печать ТТН…" Style="{StaticResource PrimaryButton}" Click="Print_Click"/>
+                <Button Content="Закрыть" Style="{StaticResource BaseButton}" IsCancel="True" Click="Close_Click" Margin="0"/>
+            </StackPanel>
+            <TextBlock Text="Состав документа хранится в базе; в журнале действий записывается только сама операция, склады и время." Style="{StaticResource CaptionText}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+        </DockPanel>
+    </Grid>
+</Window>

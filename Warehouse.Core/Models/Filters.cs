@@ -8,6 +8,8 @@ public sealed class OperationFilter
     public int? WarehouseId { get; set; }
     public int? CounterpartyId { get; set; }
     public OperationKind? Kind { get; set; }
+    /// <summary>Только позиции/документ с этим идентификатором документа.</summary>
+    public int? DocumentId { get; set; }
     public string Search { get; set; } = "";
 }
 

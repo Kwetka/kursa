@@ -36,6 +36,11 @@ public partial class ProductsView : UserControl
             if (new ProductWindow(_context,item) {Owner=Window.GetWindow(this)}.ShowDialog()==true) Refresh();
         });
     }
+    private void History_Click(object sender,RoutedEventArgs e) => Ui.Run(() =>
+    {
+        if (GridView.SelectedItem is not Product item) { Ui.Error("Выберите товар."); return; }
+        new ProductHistoryWindow(_context,item.Id,item.Name) {Owner=Window.GetWindow(this)}.Show();
+    });
     private void Delete_Click(object sender,RoutedEventArgs e) => Ui.Run(() =>
     {
         if (GridView.SelectedItem is not Product item) { Ui.Error("Выберите товар."); return; }

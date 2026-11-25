@@ -15,6 +15,9 @@ public static class InputParser
         return result;
     }
 
+    /// <summary>Необязательное число: пустая строка — null.</summary>
+    public static decimal? OptionalNumber(string? input, string field) => string.IsNullOrWhiteSpace(input) ? null : Number(input, field);
+
     // Dates are inclusive in the UI. An optional end time includes the entire minute.
     public static (DateTime? From, DateTime? ToExclusive) Interval(DateTime? fromDate, string? fromTime, DateTime? toDate, string? toTime)
     {

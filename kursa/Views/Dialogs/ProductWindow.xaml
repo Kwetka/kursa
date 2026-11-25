@@ -1,16 +1,31 @@
 <Window Language="ru-BY" x:Class="kursa.Views.Dialogs.ProductWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Товар" Width="500" Height="500"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Товар" Width="540" Height="700" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize">
     <Grid Margin="28">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <TextBlock x:Name="Heading" Style="{StaticResource TitleText}"/>
-        <StackPanel Grid.Row="1" Margin="0,22,0,0">
-            <TextBlock Text="Наименование" Style="{StaticResource FieldLabel}"/><TextBox x:Name="NameBox" MaxLength="200"/>
-            <TextBlock Text="Единица измерения" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="UnitBox" MaxLength="30"/>
-            <TextBlock Text="Закупочная цена, BYN" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="PurchaseBox"/>
-            <TextBlock Text="Продажная цена, BYN" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="SaleBox"/>
-            <TextBlock Text="Обе цены обязательны и должны быть больше нуля. Не более двух знаков после запятой; валюта — BYN." Style="{StaticResource CaptionText}" Margin="0,10,0,0" TextWrapping="Wrap"/>
-        </StackPanel>
+        <ScrollViewer Grid.Row="1" Margin="0,22,0,12" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Наименование" Style="{StaticResource FieldLabel}"/><TextBox x:Name="NameBox" MaxLength="200"/>
+                <TextBlock Text="Единица измерения" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="UnitBox" MaxLength="30"/>
+                <Grid Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="14"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <StackPanel><TextBlock Text="Закупочная цена без НДС, BYN" Style="{StaticResource FieldLabel}"/><TextBox x:Name="PurchaseBox"/></StackPanel>
+                    <StackPanel Grid.Column="2"><TextBlock Text="Продажная цена без НДС, BYN" Style="{StaticResource FieldLabel}"/><TextBox x:Name="SaleBox"/></StackPanel>
+                </Grid>
+                <TextBlock Text="Обе цены обязательны и должны быть больше нуля. Не более двух знаков после запятой; валюта — BYN." Style="{StaticResource CaptionText}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                <TextBlock Text="Ставка НДС, %" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/>
+                <ComboBox x:Name="VatBox" IsEditable="True"><ComboBoxItem Content="20"/><ComboBoxItem Content="10"/><ComboBoxItem Content="25"/><ComboBoxItem Content="0"/></ComboBox>
+                <TextBlock Text="НДС начисляется сверху: стоимость с НДС = стоимость + стоимость × ставка / 100." Style="{StaticResource CaptionText}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                <TextBlock Text="Данные для ТТН (необязательно)" FontWeight="SemiBold" Margin="0,18,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="14"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <StackPanel><TextBlock Text="Единиц в одном грузовом месте" Style="{StaticResource FieldLabel}"/><TextBox x:Name="UnitsPerPlaceBox"/></StackPanel>
+                    <StackPanel Grid.Column="2"><TextBlock Text="Масса одной единицы, кг" Style="{StaticResource FieldLabel}"/><TextBox x:Name="UnitMassBox"/></StackPanel>
+                </Grid>
+                <TextBlock Text="По этим значениям в документе рассчитываются графы 10 «Количество грузовых мест» и 11 «Масса груза, т». Пустое поле — заполнять вручную в документе." Style="{StaticResource CaptionText}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+        </ScrollViewer>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Style="{StaticResource BaseButton}" Content="Отмена" IsCancel="True"/><Button Content="Сохранить" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0"/>
         </StackPanel>

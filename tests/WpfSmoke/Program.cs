@@ -76,7 +76,9 @@ internal static class Program
             Check(Named<Button>(o,"ReceiptButton").IsEnabled==receipt,$"{role}: receipt control");
             Check(Named<Button>(o,"ShipmentButton").IsEnabled==shipment,$"{role}: shipment control");
             Check(Named<Button>(o,"TransferButton").IsEnabled==transfer,$"{role}: transfer control");
-            Check(Named<StackPanel>(w,"ActionsPanel").IsEnabled==(role==UserRole.Admin) && Named<StackPanel>(cp,"ActionsPanel").IsEnabled==(role==UserRole.Admin),$"{role}: warehouse and counterparty controls");
+            Check(Named<StackPanel>(w,"ActionsPanel").IsEnabled==(role==UserRole.Admin),$"{role}: warehouse controls (initial setup — administrator only)");
+            Check(Named<StackPanel>(cp,"ActionsPanel").IsEnabled==(role!=UserRole.Manager),$"{role}: counterparty controls (suppliers — storekeeper, buyers — sales manager)");
+            Check(Named<Button>(o,"OpenButton").IsEnabled && Named<Button>(o,"PrintButton").IsEnabled && Named<Button>(p,"HistoryButton").IsEnabled,$"{role}: document lines, TTN print and product history are available to every role");
         }
     }
 }

@@ -46,6 +46,7 @@ public static class DatabaseInitializer
             SeedUser(connection, transaction, "admin", "admin", "Администратор системы", UserRole.Admin);
             SeedUser(connection, transaction, "manager", "123", "Менеджер", UserRole.Manager);
             SeedUser(connection, transaction, "store", "123", "Кладовщик", UserRole.Storekeeper);
+            SeedUser(connection, transaction, "seller", "123", "Менеджер продаж", UserRole.SalesManager);
         }
         transaction.Commit();
     }

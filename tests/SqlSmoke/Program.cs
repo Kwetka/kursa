@@ -145,7 +145,7 @@ try
     try { repo.CreateOperation(shipment with {Quantity=6},sales); throw new Exception("FAILED: overselling accepted"); }
     catch (InvalidOperationException) { checks++; Console.WriteLine("OK: insufficient stock rejected"); }
     try { repo.CreateOperation(transfer with {ToWarehouseId=999999},store); throw new Exception("FAILED: invalid destination accepted"); }
-    catch (SqlException) { checks++; Console.WriteLine("OK: invalid destination rejected"); }
+    catch (Exception ex) when (ex is SqlException or InvalidOperationException) { checks++; Console.WriteLine("OK: invalid destination rejected"); }
     Check(repo.GetOperations(new OperationFilter()).Count==before && repo.GetAuditEntries(10000).Count==auditBefore && repo.GetStocks(new StockFilter()).Single(s=>s.ProductId==product.Id && s.WarehouseId==wa.Id).Quantity==5,"failed operations roll back balances and audit events atomically");
     try { repo.SaveProduct(new Product {Id=product.Id,Name=product.Name,Unit="кг",PurchasePrice=product.PurchasePrice,SalePrice=product.SalePrice},store); throw new Exception("FAILED: unit changed despite history"); }
     catch (InvalidOperationException) { checks++; Console.WriteLine("OK: unit cannot change after movements"); }
@@ -164,6 +164,64 @@ try
     Check(tasks.Count(t=>t.Result)==5,"parallel sales cannot oversell");
     Check(repo.GetStocks(new StockFilter {IncludeZero=true}).Single(s=>s.ProductId==product.Id && s.WarehouseId==wa.Id).Quantity==0,"parallel balances consistent");
     Check(repo.SyncAuditFile().State==AuditFileState.Verified,"parallel writes leave verifiable file");
+
+    // Версия 3: реквизиты организации (только администратор), реквизиты контрагентов, многотоварные документы и ТТН.
+    Check(repo.Authenticate("seller","123") is {Role:UserRole.SalesManager},"new database seeds demo sales manager seller / 123");
+    Check(!repo.GetOrganization().IsFilled,"new database starts with empty organization requisites");
+    var organization=new OrganizationProfile {Name="ООО «Тестовый склад»",Unp="190000001",Address="г. Минск, ул. Тестовая, 1",ReleaseAllowedBy="Директор Иванов И.И.",DefaultVatRate=20};
+    Denied(()=>repo.SaveOrganization(organization,store),"storekeeper cannot change organization requisites");
+    Denied(()=>repo.SaveOrganization(organization,sales),"sales manager cannot change organization requisites");
+    Invalid(()=>repo.SaveOrganization(new OrganizationProfile {Name="Без УНП",Address="Минск"},admin),"organization UNP required");
+    repo.SaveOrganization(organization,admin);
+    Check(repo.GetOrganization().Unp=="190000001" && repo.GetAuditEntries(10000).Any(e=>e.Action=="Изменены реквизиты организации"),"admin saves organization requisites with audit");
+    Denied(()=>repo.SaveCounterparty(new Counterparty {Name="Чужой покупатель",IsSupplier=false},store),"storekeeper cannot manage buyers");
+    Invalid(()=>repo.SaveCounterparty(new Counterparty {Name="Плохой УНП",IsSupplier=false,Unp="123"},sales),"counterparty UNP format validated");
+    buyer.Unp="191111111"; buyer.Address="г. Брест, ул. Покупателей, 5"; buyer.DeliveryAddress="г. Брест, склад покупателя"; buyer.Contract="Договор № 7 от 01.02.2026";
+    repo.SaveCounterparty(buyer,sales);
+    Check(repo.GetCounterparties().Single(x=>x.Id==buyer.Id).Contract=="Договор № 7 от 01.02.2026","sales manager edits buyer requisites");
+    var heavy=new Product {Id=other.Id,Name=other.Name,Unit=other.Unit,PurchasePrice=other.PurchasePrice,SalePrice=other.SalePrice,VatRate=10,UnitsPerPlace=4,UnitMassKg=2.5m};
+    repo.SaveProduct(heavy,store);
+    Check(repo.GetProducts().Single(x=>x.Id==other.Id) is {VatRate:10m,UnitsPerPlace:4m,UnitMassKg:2.5m},"product VAT rate and cargo data persist");
+
+    var receiptDocument=repo.CreateDocument(new DocumentInput(OperationKind.Receipt,null,wa.Id,supplier.Id,
+        new[] {new DocumentLineInput(product.Id,10),new DocumentLineInput(other.Id,8) {Price=4.5m}}) {Number="ПС 123",DocumentDate=now.Date.AddDays(-1)},store);
+    var received=repo.GetDocument(receiptDocument)!;
+    Check(received.Lines.Count==2 && received.Lines[0].Price==product.PurchasePrice && received.Lines[1].Price==4.5m && received.DocumentDate==now.Date.AddDays(-1)
+        && received.ShipperName=="Поставщик" && received.ConsigneeName==organization.Name,"multi-line receipt stores lines, prices and parties");
+    Denied(()=>repo.CreateDocument(new DocumentInput(OperationKind.Shipment,wa.Id,null,buyer.Id,new[] {new DocumentLineInput(product.Id,1)}),store),"storekeeper cannot issue sales TTN");
+    var auditBeforeDocument=repo.GetAuditEntries(10000).Count;
+    var shipmentDocument=repo.CreateDocument(new DocumentInput(OperationKind.Shipment,wa.Id,null,buyer.Id,
+        new[] {new DocumentLineInput(product.Id,3) {DiscountPercent=2,Note="розн. цена = 7,99"},new DocumentLineInput(other.Id,5)})
+        {Number="АА 0000001",Vehicle="МАЗ 1234 АВ-7",Driver="Петров П.П.",WaybillNumber="15",PayerName=buyer.Name,PayerUnp=buyer.Unp},sales);
+    var shipped=repo.GetDocument(shipmentDocument)!;
+    var discounted=Ttn.Discounted(product.SalePrice,2);
+    Check(shipped.Lines.Count==2 && shipped.Lines[0].Price==discounted && shipped.Lines[0].VatRate==20 && shipped.Lines[1].VatRate==10
+        && shipped.Lines[1].CargoPlaces==2 && shipped.Lines[1].CargoMassKg==12.5m,"shipment uses discounted sale price, product VAT and cargo defaults");
+    Check(shipped.ShipperName==organization.Name && shipped.ShipperUnp==organization.Unp && shipped.ConsigneeUnp=="191111111"
+        && shipped.UnloadingPoint=="г. Брест, склад покупателя" && shipped.Basis==buyer.Contract && shipped.ReleaseAllowedBy==organization.ReleaseAllowedBy
+        && shipped.LoadingPoint=="Минск" && shipped.HandedOverBy=="Сотрудник продаж","TTN header snapshot is filled from organization, buyer and warehouse");
+    var expectedVat=Ttn.Vat(Ttn.Amount(3,discounted),20)+Ttn.Vat(Ttn.Amount(5,other.SalePrice),10);
+    Check(shipped.Totals.VatAmount==expectedVat && shipped.Totals.AmountWithVat==shipped.Totals.Amount+expectedVat && shipped.Totals.CargoMassTonnes==0.0125m,"VAT is charged on top and totals are consistent");
+    var documentAudit=repo.GetAuditEntries(10000).Where(e=>e.Entity=="Складской документ" && e.EntityId==shipmentDocument.ToString()).ToList();
+    Check(repo.GetAuditEntries(10000).Count==auditBeforeDocument+1 && documentAudit.Count==1 && documentAudit[0].Action=="Проведена реализация"
+        && documentAudit[0].Details.Contains("Склад A") && !documentAudit[0].Details.Contains(product.Name),"one audit event per document: operation, warehouses, time — without lines");
+    Check(repo.GetDocuments(new OperationFilter {Search="АА 0000001"}).Single().LineCount==2,"document journal search by TTN number");
+    Check(repo.GetDocuments(new OperationFilter {ProductId=other.Id,Kind=OperationKind.Shipment}).Any(x=>x.Id==shipmentDocument),"document journal filter by product");
+    Check(repo.GetOperations(new OperationFilter {ProductId=product.Id,DocumentId=shipmentDocument}).Single().Price==discounted,"product history shows document lines with price");
+    try { repo.CreateDocument(new DocumentInput(OperationKind.Shipment,wa.Id,null,buyer.Id,new[] {new DocumentLineInput(product.Id,1)}) {Number="АА 0000001"},sales); throw new Exception("FAILED: duplicate TTN number accepted"); }
+    catch (InvalidOperationException) { checks++; Console.WriteLine("OK: duplicate TTN number rejected"); }
+    var stockBeforeFailed=repo.GetStocks(new StockFilter {IncludeZero=true}).Where(x=>x.WarehouseId==wa.Id).ToDictionary(x=>x.ProductId,x=>x.Quantity);
+    var documentsBeforeFailed=repo.GetDocuments(new OperationFilter()).Count;
+    try { repo.CreateDocument(new DocumentInput(OperationKind.Transfer,wa.Id,wb.Id,null,new[] {new DocumentLineInput(product.Id,1),new DocumentLineInput(other.Id,1000)}),store); throw new Exception("FAILED: transfer beyond stock accepted"); }
+    catch (InvalidOperationException ex) when (ex.Message.Contains(other.Name)) { checks++; Console.WriteLine("OK: insufficient line names the product"); }
+    Check(repo.GetDocuments(new OperationFilter()).Count==documentsBeforeFailed
+        && repo.GetStocks(new StockFilter {IncludeZero=true}).Where(x=>x.WarehouseId==wa.Id).All(x=>stockBeforeFailed[x.ProductId]==x.Quantity),"multi-line document is atomic: one short line rolls back all lines");
+    var transferDocument=repo.CreateDocument(new DocumentInput(OperationKind.Transfer,wa.Id,wb.Id,null,new[] {new DocumentLineInput(product.Id,2),new DocumentLineInput(other.Id,1) {VatRate=20}}),store);
+    var transferred=repo.GetDocument(transferDocument)!;
+    Check(transferred.Lines.All(x=>x.VatRate is null) && transferred.Lines[0].Price==product.PurchasePrice && transferred.Basis=="Внутреннее перемещение"
+        && transferred.ShipperName==organization.Name && transferred.ConsigneeName==organization.Name && transferred.UnloadingPoint=="Брест","transfer is without VAT at purchase prices between own warehouses");
+    Invalid(()=>repo.CreateDocument(new DocumentInput(OperationKind.Shipment,wa.Id,null,buyer.Id,new[] {new DocumentLineInput(product.Id,1),new DocumentLineInput(product.Id,1)}),sales),"same product twice in one document rejected");
+    Check(repo.GetDocumentSuggestions().Vehicles.Contains("МАЗ 1234 АВ-7"),"transport suggestions come from previous documents");
 
     // Проверка текущей роли в БД и мягкого удаления с сохранением истории.
     repo.SaveUser(new UserAccount {Id=sales.Id,Login="sales2",FullName="Сотрудник продаж",Role=UserRole.Manager},null,admin);
@@ -263,6 +321,12 @@ try
     Check(legacy.Authenticate("admin","admin") is null && legacy.GetUsers(oldAdmin).Count==1,"migration preserves existing users and password, does not reseed accounts");
     Check(legacy.GetProducts().Single().PurchasePrice==0 && legacy.GetWarehouses().Single().Address=="\t" && legacy.GetLegacyDataIssues()==new LegacyDataIssues(1,1),"legacy zero and empty fields preserved and flagged");
     Check(legacy.GetOperations(new OperationFilter()).Single().Comment=="Старая поставка" && legacy.GetStocks(new StockFilter()).Single().Quantity==5,"migration preserves old operation history and balances");
+    var legacyDocument=legacy.GetDocuments(new OperationFilter()).Single();
+    Check(legacyDocument.LineCount==1 && legacyDocument.Kind==OperationKind.Receipt && legacy.GetDocument(legacyDocument.Id)!.IsLegacy
+        && legacy.GetDocument(legacyDocument.Id)!.Lines.Single().Price is null,"v3 migration turns each old operation into a one-line document");
+    Check(legacy.GetProducts().Single().VatRate==20 && legacy.GetCounterparties().Single().Unp=="" && !legacy.GetOrganization().IsFilled,"v3 migration adds defaults for new requisites");
+    SqlConstraint(migrationCs,"UPDATE dbo.StockOperations SET Price=0","migrated SQL rejects zero line price");
+    SqlConstraint(migrationCs,"UPDATE dbo.OrganizationProfile SET DefaultVatRate=101","migrated SQL rejects VAT rate above 100 %");
     SqlConstraint(migrationCs,"INSERT dbo.Products(Name,Unit,PurchasePrice,SalePrice) VALUES (N'zero',N'шт',0,1)","migrated SQL rejects new zero price");
     SqlConstraint(migrationCs,"INSERT dbo.Warehouses(Name,Address,ManagerName,ManagerContact) VALUES (N'W',N'',N'N',N'C')","migrated SQL rejects new blank warehouse fields");
     var oldProduct=legacy.GetProducts().Single(); oldProduct.PurchasePrice=1; oldProduct.SalePrice=2; legacy.SaveProduct(oldProduct,oldAdmin);

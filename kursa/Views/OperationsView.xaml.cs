@@ -37,10 +37,10 @@ public partial class OperationsView : UserControl
     {
         var type=Ui.SelectedId(KindBox);
         var interval=Ui.BuildInterval(Ui.ReadDate(FromPicker,"Дата с"),FromTimeBox.Text,Ui.ReadDate(ToPicker,"Дата по"),ToTimeBox.Text);
-        var rows=_context.Repository.GetOperations(new OperationFilter {FromInclusive=interval.From,ToExclusive=interval.ToExclusive,
+        var rows=_context.Repository.GetDocuments(new OperationFilter {FromInclusive=interval.From,ToExclusive=interval.ToExclusive,
             ProductId=Ui.SelectedId(ProductBox),WarehouseId=Ui.SelectedId(WarehouseBox),CounterpartyId=Ui.SelectedId(PartyBox),
             Kind=type.HasValue ? (OperationKind)type.Value : null,Search=SearchBox.Text});
-        GridView.ItemsSource=rows; CountText.Text=$"Найдено операций: {rows.Count}. Пустое время: начало / конец дня; указанная конечная минута включена.";
+        GridView.ItemsSource=rows; CountText.Text=$"Найдено документов: {rows.Count}. Пустое время: начало / конец дня; указанная конечная минута включена.";
         _loaded=true; _filters.MarkApplied();
     });
     private void Apply_Click(object sender,RoutedEventArgs e) => Apply();
@@ -52,7 +52,23 @@ public partial class OperationsView : UserControl
     }
     private void OpenOperation(OperationKind kind) => Ui.Run(() =>
     {
-        if (new OperationWindow(_context,kind) {Owner=Window.GetWindow(this)}.ShowDialog()==true) Refresh();
+        if (new DocumentWindow(_context,kind) {Owner=Window.GetWindow(this)}.ShowDialog()==true) Refresh();
+    });
+    private DocumentRow? Selected(object sender)
+    {
+        if (GridView.SelectedItem is DocumentRow row) return row;
+        if (sender is Button) Ui.Error("Выберите документ в журнале.");
+        return null;
+    }
+    private void Open_Click(object sender,RoutedEventArgs e) => Ui.Run(() =>
+    {
+        if (Selected(sender) is { } row) new DocumentDetailsWindow(_context,row.Id) {Owner=Window.GetWindow(this)}.Show();
+    });
+    private void Print_Click(object sender,RoutedEventArgs e) => Ui.Run(() =>
+    {
+        if (Selected(sender) is not { } row) return;
+        var document=_context.Repository.GetDocument(row.Id) ?? throw new InvalidOperationException("Документ не найден.");
+        new TtnPrintWindow(document,_context.Repository.GetOrganization()) {Owner=Window.GetWindow(this)}.Show();
     });
     private void Receipt_Click(object sender,RoutedEventArgs e) => OpenOperation(OperationKind.Receipt);
     private void Shipment_Click(object sender,RoutedEventArgs e) => OpenOperation(OperationKind.Shipment);

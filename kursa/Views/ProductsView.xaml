@@ -2,11 +2,12 @@
     <Grid Margin="18">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,16">
+            <Button x:Name="HistoryButton" DockPanel.Dock="Right" Style="{StaticResource BaseButton}" Content="История операций" Click="History_Click" Margin="8,0,0,0" ToolTip="Все приходы, реализации и перемещения выбранного товара"/>
             <StackPanel x:Name="ActionsPanel" DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="+ Добавить" Style="{StaticResource PrimaryButton}" Click="Add_Click"/>
                 <Button Style="{StaticResource BaseButton}" Content="Изменить" Click="Edit_Click"/><Button Content="Удалить" Style="{StaticResource DangerButton}" Click="Delete_Click" Margin="0"/>
             </StackPanel>
-            <StackPanel><TextBlock Text="Номенклатура" Style="{StaticResource TitleText}"/><TextBlock Text="Товары и цены в белорусских рублях" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/></StackPanel>
+            <StackPanel><TextBlock Text="Номенклатура" Style="{StaticResource TitleText}"/><TextBlock Text="Товары и цены без НДС в белорусских рублях" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/></StackPanel>
         </DockPanel>
         <Border Grid.Row="1" Style="{StaticResource PanelCard}" Margin="0,0,0,12" Padding="12,8">
             <Expander x:Name="FiltersExpander" Header="Фильтры" IsExpanded="False">
@@ -24,6 +25,9 @@
                 <DataGridTextColumn Header="Ед. изм." Binding="{Binding Unit}" Width="*"/>
                 <DataGridTextColumn Header="Закупочная цена, BYN" Binding="{Binding PurchasePrice, StringFormat={}{0:N2}}" Width="1.5*"/>
                 <DataGridTextColumn Header="Продажная цена, BYN" Binding="{Binding SalePrice, StringFormat={}{0:N2}}" Width="1.5*"/>
+                <DataGridTextColumn Header="НДС" Binding="{Binding VatRateDisplay}" Width="0.8*"/>
+                <DataGridTextColumn Header="Ед. в месте" Binding="{Binding UnitsPerPlace, StringFormat={}{0:0.###}}" Width="*"/>
+                <DataGridTextColumn Header="Масса ед., кг" Binding="{Binding UnitMassKg, StringFormat={}{0:0.###}}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>
         <TextBlock x:Name="CountText" Grid.Row="3" Style="{StaticResource CaptionText}" Margin="0,10,0,0"/>

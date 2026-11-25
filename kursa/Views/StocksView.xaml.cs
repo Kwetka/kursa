@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using kursa.Infrastructure;
+using kursa.Views.Dialogs;
 using Warehouse.Core.Models;
 
 namespace kursa.Views;
@@ -64,4 +65,9 @@ public partial class StocksView : UserControl
         FromPicker.SelectedDate=null; ToPicker.SelectedDate=null; ProductBox.SelectedIndex=WarehouseBox.SelectedIndex=0;
         MinimumBox.Text=SearchBox.Text=FromTimeBox.Text=ToTimeBox.Text=""; ZeroBox.IsChecked=false; Apply();
     }
+    private void History_Click(object sender,RoutedEventArgs e) => Ui.Run(() =>
+    {
+        if (GridView.SelectedItem is not StockRow row) { if (sender is Button) Ui.Error("Выберите строку остатка."); return; }
+        new ProductHistoryWindow(_context,row.ProductId,row.ProductName) {Owner=Window.GetWindow(this)}.Show();
+    });
 }

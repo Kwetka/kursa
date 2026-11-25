@@ -3,6 +3,7 @@
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <DockPanel Margin="0,0,0,16">
             <Button Style="{StaticResource BaseButton}" DockPanel.Dock="Right" Content="Обновить" Click="Refresh_Click" HorizontalAlignment="Right" Margin="0"/>
+            <Button x:Name="HistoryButton" Style="{StaticResource BaseButton}" DockPanel.Dock="Right" Content="История товара" Click="History_Click" HorizontalAlignment="Right" ToolTip="Все операции по товару выбранной строки (двойной щелчок по строке)"/>
             <StackPanel><TextBlock Text="Текущие остатки" Style="{StaticResource TitleText}"/>
                 <TextBlock Text="Остаток сейчас; период отбирает позиции по дате последнего движения" Style="{StaticResource CaptionText}" Margin="0,3,0,0"/></StackPanel>
         </DockPanel>
@@ -20,7 +21,7 @@
               </WrapPanel>
             </Expander>
         </Border>
-        <DataGrid x:Name="GridView" Grid.Row="2" HorizontalScrollBarVisibility="Auto">
+        <DataGrid x:Name="GridView" Grid.Row="2" HorizontalScrollBarVisibility="Auto" MouseDoubleClick="History_Click">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Склад" Binding="{Binding WarehouseName}" Width="170"/>
                 <DataGridTextColumn Header="Товар" Binding="{Binding ProductName}" Width="220"/>

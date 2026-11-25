@@ -13,7 +13,7 @@ public partial class WarehousesView : UserControl
     private bool _loaded;
     public WarehousesView(WorkspaceContext context)
     {
-        InitializeComponent(); _context=context; ActionsPanel.IsEnabled=context.User.CanManageWarehousesAndParties;
+        InitializeComponent(); _context=context; ActionsPanel.IsEnabled=context.User.CanManageWarehouses;
         _filters=new FilterIndicator(ApplyButton,FiltersExpander,()=>[SearchBox.Text]); _filters.Track(SearchBox);
     }
     public void Refresh() { if (!_loaded || !_filters.IsDirty) LoadAndApply(); }
@@ -29,7 +29,7 @@ public partial class WarehousesView : UserControl
     private void Add_Click(object sender,RoutedEventArgs e) => Ui.Run(() => { if (new WarehouseWindow(_context,null) {Owner=Window.GetWindow(this)}.ShowDialog()==true) Refresh(); });
     private void Edit_Click(object sender,RoutedEventArgs e)
     {
-        if (!_context.User.CanManageWarehousesAndParties) return;
+        if (!_context.User.CanManageWarehouses) return;
         Ui.Run(() =>
         {
             if (GridView.SelectedItem is not WarehouseEntity item) { Ui.Error("Выберите склад."); return; }

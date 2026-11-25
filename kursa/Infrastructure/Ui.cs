@@ -14,7 +14,9 @@ public static class Ui
         catch (Exception ex) { Error(ex.Message); return false; }
     }
     public static decimal ParseNumber(string? input, string field) => Warehouse.Core.Services.InputParser.Number(input, field);
+    public static decimal? ParseOptional(string? input, string field) => Warehouse.Core.Services.InputParser.OptionalNumber(input, field);
     public static string FormatNumber(decimal value) => value.ToString("0.##", CultureInfo.CurrentCulture);
+    public static string FormatOptional(decimal? value, string format = "0.###") => value?.ToString(format, CultureInfo.CurrentCulture) ?? "";
     public static (DateTime? From, DateTime? ToExclusive) BuildInterval(DateTime? fromDate, string? fromTime, DateTime? toDate, string? toTime)
         => Warehouse.Core.Services.InputParser.Interval(fromDate, fromTime, toDate, toTime);
     public static DateTime? ReadDate(DatePicker picker, string field)

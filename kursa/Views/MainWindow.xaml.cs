@@ -89,6 +89,16 @@ public partial class MainWindow : Window
     {
         try
         {
+            var organization=_context.Repository.GetOrganization();
+            OrganizationWarning.Visibility=organization.IsFilled ? Visibility.Collapsed : Visibility.Visible;
+            OrganizationWarningButton.Visibility=_context.User.CanManageOrganization ? Visibility.Visible : Visibility.Collapsed;
+            OrganizationWarningText.Text=_context.User.CanManageOrganization
+                ? "Начальная настройка: заполните реквизиты организации (наименование, УНП, адрес) — они печатаются в ТТН как данные грузоотправителя."
+                : "Реквизиты организации для ТТН ещё не заполнены. Их заполняет администратор.";
+        }
+        catch { /* Подробную ошибку покажет следующий запрос к SQL. */ }
+        try
+        {
             var issues=_context.Repository.GetLegacyDataIssues();
             LegacyWarning.Visibility=issues.HasIssues ? Visibility.Visible : Visibility.Collapsed;
             LegacyWarningText.Text=$"Старые данные сохранены, но требуют исправления: товаров с нулевой ценой — {issues.Products}, складов с незаполненными полями — {issues.Warehouses}. Измените их в соответствующих справочниках.";
@@ -96,6 +106,10 @@ public partial class MainWindow : Window
         catch { /* Подробную ошибку покажет следующий запрос к SQL. */ }
     }
     private void Audit_Click(object sender,RoutedEventArgs e) => Tabs.SelectedItem=AuditTab;
+    private void Organization_Click(object sender,RoutedEventArgs e) => Ui.Run(() =>
+    {
+        if (new OrganizationWindow(_context) {Owner=this}.ShowDialog()==true) UpdateLegacyWarning();
+    });
     private void Password_Click(object sender,RoutedEventArgs e) => new PasswordWindow(_context) {Owner=this}.ShowDialog();
     private void Logout_Click(object sender,RoutedEventArgs e) { LogoutRequested=true; Close(); }
 }

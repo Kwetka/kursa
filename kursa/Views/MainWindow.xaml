@@ -8,7 +8,7 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <StackPanel Margin="0,0,16,0" VerticalAlignment="Center"><TextBlock x:Name="UserText" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Right"/>
                         <TextBlock x:Name="RoleText" Foreground="#A8BED8" FontSize="11" HorizontalAlignment="Right"/></StackPanel>
-                    <Button Style="{StaticResource BaseButton}" Content="Сменить пароль" Click="Password_Click"/><Button Style="{StaticResource BaseButton}" Content="Выход из учётной записи" Click="Logout_Click" Margin="0"/>
+                    <Button x:Name="OrganizationButton" Style="{StaticResource BaseButton}" Content="Моя организация" Click="Organization_Click" ToolTip="Реквизиты организации для ТТН (изменяет администратор)"/><Button Style="{StaticResource BaseButton}" Content="Сменить пароль" Click="Password_Click"/><Button Style="{StaticResource BaseButton}" Content="Выход из учётной записи" Click="Logout_Click" Margin="0"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Background="#1769D2" CornerRadius="6" Width="40" Height="40" Margin="0,0,12,0"><TextBlock Text="С" Foreground="White" FontSize="21" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
@@ -21,6 +21,10 @@
             <Border x:Name="AuditWarning" Background="#FFF0EE" BorderBrush="#D58A83" BorderThickness="1" CornerRadius="4" Padding="10,6" Visibility="Collapsed" Margin="0,0,0,4"><DockPanel>
                 <Button DockPanel.Dock="Right" Content="Журнал" Style="{StaticResource BaseButton}" Click="Audit_Click" Margin="8,0,0,0"/>
                 <TextBlock x:Name="AuditWarningText" Foreground="#9D2525" TextWrapping="Wrap" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            </DockPanel></Border>
+            <Border x:Name="OrganizationWarning" Background="#EEF5FF" BorderBrush="#9CBDE8" BorderThickness="1" CornerRadius="4" Padding="10,6" Visibility="Collapsed" Margin="0,0,0,4"><DockPanel>
+                <Button x:Name="OrganizationWarningButton" DockPanel.Dock="Right" Content="Заполнить" Style="{StaticResource BaseButton}" Click="Organization_Click" Margin="8,0,0,0"/>
+                <TextBlock x:Name="OrganizationWarningText" Foreground="#23446E" TextWrapping="Wrap" VerticalAlignment="Center"/>
             </DockPanel></Border>
             <Border x:Name="LegacyWarning" Background="#FFF8E5" BorderBrush="#E6CD8B" BorderThickness="1" CornerRadius="4" Padding="10,6" Visibility="Collapsed"><TextBlock x:Name="LegacyWarningText" Foreground="#775600" TextWrapping="Wrap"/></Border>
         </StackPanel>

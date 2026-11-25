@@ -1,0 +1,27 @@
+<Window Language="ru-BY" x:Class="kursa.Views.Dialogs.OrganizationWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Моя организация" Width="580" Height="640" MinHeight="460"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize">
+    <Grid Margin="28">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock Text="Реквизиты организации" Style="{StaticResource TitleText}"/>
+            <TextBlock Text="Начальная настройка программы. Используются как данные грузоотправителя (при реализации и перемещении) и грузополучателя (при приходе) в ТТН." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,5,0,0"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1" Margin="0,20,0,12" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Полное наименование организации" Style="{StaticResource FieldLabel}"/><TextBox x:Name="NameBox" MaxLength="300"/>
+                <TextBlock Text="УНП (9 символов)" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="UnpBox" MaxLength="9"/>
+                <TextBlock Text="Юридический адрес" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="AddressBox" MaxLength="400"/>
+                <TextBlock Text="Телефон" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="PhoneBox" MaxLength="100"/>
+                <TextBlock Text="«Отпуск разрешил» — должность и ФИО" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/><TextBox x:Name="ReleaseBox" MaxLength="200"/>
+                <TextBlock Text="Подставляется в ТТН; при необходимости меняется в конкретном документе." Style="{StaticResource CaptionText}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                <TextBlock Text="Ставка НДС по умолчанию для новых товаров, %" Style="{StaticResource FieldLabel}" Margin="0,14,0,5"/>
+                <ComboBox x:Name="VatBox" IsEditable="True"><ComboBoxItem Content="20"/><ComboBoxItem Content="10"/><ComboBoxItem Content="25"/><ComboBoxItem Content="0"/></ComboBox>
+                <TextBlock x:Name="ReadOnlyHint" Text="Изменять реквизиты может только администратор." Style="{StaticResource CaptionText}" Foreground="#9D2525" Margin="0,12,0,0" Visibility="Collapsed"/>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Style="{StaticResource BaseButton}" Content="Закрыть" IsCancel="True"/><Button x:Name="SaveButton" Content="Сохранить" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0"/>
+        </StackPanel>
+    </Grid>
+</Window>

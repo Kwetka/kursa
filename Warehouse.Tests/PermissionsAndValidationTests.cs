@@ -28,10 +28,23 @@ public class PermissionsAndValidationTests
     public void RoleMatrix(UserRole role,bool product,bool warehouse,bool receipt,bool transfer,bool shipment,bool analytics)
     {
         var u=new AppUser(1,"u","User",role);
-        Assert.Equal(product,u.CanManageProducts); Assert.Equal(warehouse,u.CanManageWarehousesAndParties);
+        Assert.Equal(product,u.CanManageProducts); Assert.Equal(warehouse,u.CanManageWarehouses);
         Assert.Equal(receipt,u.CanPerform(OperationKind.Receipt)); Assert.Equal(transfer,u.CanPerform(OperationKind.Transfer));
         Assert.Equal(shipment,u.CanPerform(OperationKind.Shipment)); Assert.Equal(analytics,u.CanAnalyze);
         Assert.Equal(role==UserRole.Admin,u.CanManageUsers);
+        Assert.Equal(role==UserRole.Admin,u.CanManageOrganization);
+    }
+
+    [Theory]
+    [InlineData(UserRole.Admin,true,true)]
+    [InlineData(UserRole.Manager,false,false)]
+    [InlineData(UserRole.Storekeeper,true,false)]
+    [InlineData(UserRole.SalesManager,false,true)]
+    public void CounterpartiesAreSplitBetweenStorekeeperAndSalesManager(UserRole role,bool suppliers,bool buyers)
+    {
+        var u=new AppUser(1,"u","User",role);
+        Assert.Equal(suppliers,u.CanManageCounterparty(true)); Assert.Equal(buyers,u.CanManageCounterparty(false));
+        Assert.Equal(suppliers || buyers,u.CanManageAnyCounterparty);
     }
 
     [Fact]
