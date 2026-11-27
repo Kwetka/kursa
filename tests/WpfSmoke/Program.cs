@@ -4,10 +4,11 @@ using System.Windows.Controls;
 using System.Windows.Shapes;
 using kursa.Infrastructure;
 using kursa.Views;
+using kursa.Views.Dialogs;
 using Warehouse.Core.Data;
 using Warehouse.Core.Models;
 
-internal static class Program
+internal static partial class Program
 {
     private static int _checks;
     [STAThread]
@@ -17,7 +18,16 @@ internal static class Program
         {
             var app=new Application {ShutdownMode=ShutdownMode.OnExplicitShutdown};
             app.Resources.MergedDictionaries.Add(new ResourceDictionary {Source=new Uri("pack://application:,,,/kursa;component/Themes/Styles.xaml")});
+            // Optional font substitution for Wine test environments; native Windows uses the real application style.
+            var font=Environment.GetEnvironmentVariable("WAREHOUSE_WPF_TEST_FONT");
+            if (!string.IsNullOrWhiteSpace(font))
+            {
+                var style=new Style(typeof(Window)); style.Setters.Add(new Setter(Window.FontFamilyProperty,new System.Windows.Media.FontFamily(font)));
+                app.Resources[typeof(Window)]=style;
+            }
             Run();
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAREHOUSE_WPF_TEST_SERVER")))
+                RunDatabaseScenarios();
             Console.WriteLine($"WPF state checks passed: {_checks}.");
             return 0;
         }
@@ -65,6 +75,30 @@ internal static class Program
         field.Text="new"; Check(!IsDirty(button),"reverting to last applied value removes icon");
         indicator.ForceDirty(); Check(IsDirty(button),"changed underlying data can force stale state");
         indicator.MarkApplied(); Check(!IsDirty(button),"successful refresh clears forced stale state");
+
+        var productCard=new Product {Id=1,Name="Тестовый товар",Unit="шт",PurchasePrice=5,SalePrice=10,UnitWeightKg=2.5m,UnitsPerCargoPlace=10};
+        var lineEditor=new OperationItemWindow([productCard],OperationKind.Shipment);
+        Check(Named<StackPanel>(lineEditor,"SalePanel").Visibility==Visibility.Visible && Named<TextBox>(lineEditor,"VatBox").IsEnabled,
+            "sale position exposes pricing and VAT");
+        Named<TextBox>(lineEditor,"QuantityBox").Text="20";
+        Check(Named<TextBox>(lineEditor,"PlacesBox").Text=="2" && Ui.ParseNumber(Named<TextBox>(lineEditor,"MassBox").Text,"Масса")==0.05m,
+            "sale calculates cargo places and tonnes from product card");
+        Named<TextBox>(lineEditor,"MassBox").Text="0.25"; Named<TextBox>(lineEditor,"QuantityBox").Text="30";
+        Check(Ui.ParseNumber(Named<TextBox>(lineEditor,"MassBox").Text,"Масса")==0.25m,
+            "manually entered cargo survives quantity edits");
+        var withoutVat=new OperationItemWindow([productCard],OperationKind.Shipment,withoutVat:true);
+        Check(!Named<TextBox>(withoutVat,"VatBox").IsEnabled,"without-VAT position disables VAT input");
+        var transferLine=new OperationItemWindow([productCard],OperationKind.Transfer);
+        Check(Named<StackPanel>(transferLine,"SalePanel").Visibility==Visibility.Collapsed,"transfer line hides sale fields");
+        var adminOrg=new OrganizationView(context);
+        var managerOrg=new OrganizationView(new WorkspaceContext(repo,new AppUser(2,"manager","Manager",UserRole.Manager)));
+        Check(Named<Button>(adminOrg,"SaveButton").IsEnabled && !Named<TextBox>(adminOrg,"NameBox").IsReadOnly,
+            "admin can edit organization fields");
+        Check(!Named<Button>(managerOrg,"SaveButton").IsEnabled && Named<TextBox>(managerOrg,"NameBox").IsReadOnly,
+            "ordinary manager can only view organization fields");
+        var journal=new OperationsView(context);
+        Check(Named<TabControl>(journal,"HistoryTabs").Items.Count==2 && !Named<Button>(journal,"InvoiceButton").IsEnabled,
+            "journal offers grouped and per-product tabs and no invoice until selection");
 
         foreach(var (role,products,receipt,shipment,transfer) in new[] {
             (UserRole.Admin,true,true,true,true),(UserRole.Manager,false,false,false,false),

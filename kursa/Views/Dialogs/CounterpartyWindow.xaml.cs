@@ -12,10 +12,11 @@ public partial class CounterpartyWindow : Window
         InitializeComponent(); _context=context; _id=party?.Id ?? 0;
         Heading.Text=_id==0 ? "Новый контрагент" : "Изменить контрагента";
         NameBox.Text=party?.Name ?? ""; TypeBox.SelectedIndex=party?.IsSupplier == false ? 1 : 0;
+        AddressBox.Text=party?.Address ?? ""; UnpBox.Text=party?.Unp ?? "";
     }
     private void Save_Click(object sender, RoutedEventArgs e) => Ui.Run(() =>
     {
-        _context.Repository.SaveCounterparty(new Counterparty { Id=_id,Name=NameBox.Text,IsSupplier=TypeBox.SelectedIndex==0 },_context.User);
+        _context.Repository.SaveCounterparty(new Counterparty { Id=_id,Name=NameBox.Text,IsSupplier=TypeBox.SelectedIndex==0,Address=AddressBox.Text,Unp=UnpBox.Text },_context.User);
         _context.NotifyDataChanged(); DialogResult=true;
     });
 }

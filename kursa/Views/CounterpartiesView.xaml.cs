@@ -20,7 +20,7 @@ public partial class CounterpartiesView : UserControl
     private void LoadAndApply() => Ui.Run(() =>
     {
         var items=_context.Repository.GetCounterparties(); var term=SearchBox.Text.Trim();
-        var filtered=items.Where(x=>x.Name.Contains(term,StringComparison.CurrentCultureIgnoreCase) || x.TypeName.Contains(term,StringComparison.CurrentCultureIgnoreCase)).ToList();
+        var filtered=items.Where(x=>x.Name.Contains(term,StringComparison.CurrentCultureIgnoreCase) || (x.TypeName.Contains(term,StringComparison.CurrentCultureIgnoreCase) || x.Address.Contains(term,StringComparison.CurrentCultureIgnoreCase) || x.Unp.Contains(term,StringComparison.CurrentCultureIgnoreCase))).ToList();
         GridView.ItemsSource=filtered; CountText.Text=$"Показано контрагентов: {filtered.Count}"; _loaded=true; _filters.MarkApplied();
     });
     private void Apply_Click(object sender,RoutedEventArgs e) => LoadAndApply();

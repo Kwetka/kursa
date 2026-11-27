@@ -19,7 +19,8 @@
         </Border>
         <DataGrid x:Name="GridView" Grid.Row="2" MouseDoubleClick="Edit_Click"><DataGrid.Columns>
             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="70"/><DataGridTextColumn Header="Наименование" Binding="{Binding Name}" Width="3*"/>
-            <DataGridTextColumn Header="Тип" Binding="{Binding TypeName}" Width="2*"/>
+            <DataGridTextColumn Header="Тип" Binding="{Binding TypeName}" Width="1.2*"/>
+            <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="3*"/><DataGridTextColumn Header="УНП" Binding="{Binding Unp}" Width="1.2*"/>
         </DataGrid.Columns></DataGrid>
         <TextBlock x:Name="CountText" Grid.Row="3" Style="{StaticResource CaptionText}" Margin="0,10,0,0"/>
     </Grid>

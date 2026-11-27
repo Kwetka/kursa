@@ -28,6 +28,17 @@ public sealed partial class WarehouseRepository
         _auditStatus = new AuditFileStatus(AuditFileState.NotChecked, "Журнал ещё не проверен.", _auditPath);
     }
 
+    // Разные базы не должны перезаписывать друг другу одинаковые номера файлов ТТН.
+    public string InvoiceStorageKey
+    {
+        get
+        {
+            var builder=new SqlConnectionStringBuilder(_connectionString);
+            var source=$"{builder.DataSource}|{builder.InitialCatalog}".ToUpperInvariant();
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)))[..16];
+        }
+    }
+
     public Guid AuditStreamId => _streamId;
     public string AuditFilePath => _auditPath;
     public AuditFileStatus AuditStatus => _auditStatus;
@@ -45,6 +56,11 @@ public sealed partial class WarehouseRepository
         var p = size != 0 ? cmd.Parameters.Add(name, type, size) : cmd.Parameters.Add(name, type);
         if (type == SqlDbType.Decimal) { p.Precision = 18; p.Scale = 3; }
         p.Value = value ?? DBNull.Value;
+    }
+
+    private static void AddDecimal(SqlCommand cmd, string name, decimal? value, byte scale)
+    {
+        var p=cmd.Parameters.Add(name,SqlDbType.Decimal); p.Precision=18; p.Scale=scale; p.Value=(object?)value ?? DBNull.Value;
     }
 
     private static string Pattern(string? text)

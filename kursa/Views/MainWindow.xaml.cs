@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     private readonly ProductsView _products;
     private readonly WarehousesView _warehouses;
     private readonly CounterpartiesView _counterparties;
+    private readonly OrganizationView _organization;
     private readonly OperationsView _operations;
     private readonly StocksView _stocks;
     private readonly TurnoverView _turnover;
@@ -26,10 +27,11 @@ public partial class MainWindow : Window
         InitializeComponent(); _context=context;
         UserText.Text=context.User.FullName; RoleText.Text=context.User.RoleName;
         _products=new ProductsView(context); _warehouses=new WarehousesView(context); _counterparties=new CounterpartiesView(context);
+        _organization=new OrganizationView(context);
         _operations=new OperationsView(context); _stocks=new StocksView(context); _turnover=new TurnoverView(context);
         _users=new UsersView(context); _audit=new AuditView(context);
         ProductsHost.Content=_products; WarehousesHost.Content=_warehouses; CounterpartiesHost.Content=_counterparties;
-        OperationsHost.Content=_operations; StocksHost.Content=_stocks; TurnoverHost.Content=_turnover;
+        OrganizationHost.Content=_organization; OperationsHost.Content=_operations; StocksHost.Content=_stocks; TurnoverHost.Content=_turnover;
         ReportsHost.Content=new ReportsView(context,_stocks,_turnover); UsersHost.Content=_users; AuditHost.Content=_audit;
         TurnoverTab.IsEnabled=ReportsTab.IsEnabled=context.User.CanAnalyze; UsersTab.IsEnabled=context.User.CanManageUsers;
         _ready=true;
@@ -51,6 +53,7 @@ public partial class MainWindow : Window
         if (Tabs.SelectedItem==ProductsTab) _products.Refresh();
         else if (Tabs.SelectedItem==WarehousesTab) _warehouses.Refresh();
         else if (Tabs.SelectedItem==CounterpartiesTab) _counterparties.Refresh();
+        else if (Tabs.SelectedItem==OrganizationTab) _organization.Refresh();
         else if (Tabs.SelectedItem==OperationsTab) _operations.Refresh();
         else if (Tabs.SelectedItem==StocksTab) _stocks.Refresh();
         else if (Tabs.SelectedItem==TurnoverTab) _turnover.Refresh();

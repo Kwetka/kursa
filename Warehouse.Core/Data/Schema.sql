@@ -1,4 +1,4 @@
--- Схема версии 2. Создание и недеструктивная миграция выполняются в одной транзакции.
+-- Схема версии 3. Создание и недеструктивная миграция выполняются в одной транзакции.
 DECLARE @lockResult int;
 EXEC @lockResult = sys.sp_getapplock @Resource = N'WarehouseCourse.Schema',
     @LockMode = N'Exclusive', @LockOwner = N'Transaction', @LockTimeout = 15000;
@@ -81,7 +81,7 @@ BEGIN
     INSERT INTO dbo.WarehouseSchemaVersion(Id, Version) VALUES (1, 1);
     SET @created = 1;
 END
-ELSE IF NOT EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id = 1 AND Version IN (1, 2))
+ELSE IF NOT EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id = 1 AND Version IN (1, 2, 3))
     THROW 51002, N'Версия базы данных несовместима с этой версией приложения.', 1;
 
 IF EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id=1 AND Version=1)
@@ -118,5 +118,53 @@ BEGIN
     );
     CREATE INDEX IX_AuditEvents_Stream ON dbo.AuditEvents(StreamId, Id);
     UPDATE dbo.WarehouseSchemaVersion SET Version=2 WHERE Id=1;
+END
+IF EXISTS (SELECT 1 FROM dbo.WarehouseSchemaVersion WHERE Id=1 AND Version=2)
+BEGIN
+    -- Старые движения остаются отдельными строками без BatchId. Данные не пересчитываются.
+    ALTER TABLE dbo.Products ADD UnitWeightKg decimal(18,6) NULL,
+        UnitsPerCargoPlace decimal(18,3) NULL;
+    EXEC(N'ALTER TABLE dbo.Products ADD CONSTRAINT CK_Products_UnitWeight CHECK (UnitWeightKg IS NULL OR (UnitWeightKg>0 AND UnitWeightKg<=1000000000))');
+    EXEC(N'ALTER TABLE dbo.Products ADD CONSTRAINT CK_Products_CargoUnits CHECK (UnitsPerCargoPlace IS NULL OR (UnitsPerCargoPlace>0 AND UnitsPerCargoPlace<=1000000000))');
+    ALTER TABLE dbo.Counterparties ADD Address nvarchar(400) NOT NULL CONSTRAINT DF_Counterparties_Address DEFAULT N'',
+        Unp nvarchar(30) NOT NULL CONSTRAINT DF_Counterparties_Unp DEFAULT N'';
+    CREATE TABLE dbo.OrganizationProfile (
+        Id int NOT NULL CONSTRAINT PK_OrganizationProfile PRIMARY KEY CHECK (Id=1),
+        Name nvarchar(200) NOT NULL, Address nvarchar(400) NOT NULL, Unp nvarchar(30) NOT NULL
+    );
+    INSERT dbo.OrganizationProfile(Id,Name,Address,Unp) VALUES(1,N'',N'',N'');
+    CREATE TABLE dbo.OperationBatches (
+        Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_OperationBatches PRIMARY KEY,
+        OccurredAt datetime2(7) NOT NULL CONSTRAINT DF_OperationBatches_Time DEFAULT SYSDATETIME(),
+        Kind tinyint NOT NULL CONSTRAINT CK_OperationBatches_Kind CHECK(Kind IN (0,1,2)),
+        FromWarehouseId int NULL CONSTRAINT FK_OperationBatches_From REFERENCES dbo.Warehouses(Id),
+        ToWarehouseId int NULL CONSTRAINT FK_OperationBatches_To REFERENCES dbo.Warehouses(Id),
+        CounterpartyId int NULL CONSTRAINT FK_OperationBatches_Party REFERENCES dbo.Counterparties(Id),
+        Comment nvarchar(500) NOT NULL, UserId int NOT NULL CONSTRAINT FK_OperationBatches_User REFERENCES dbo.WarehouseUsers(Id),
+        FromWarehouseNameSnapshot nvarchar(200) NULL, ToWarehouseNameSnapshot nvarchar(200) NULL,
+        CounterpartyNameSnapshot nvarchar(200) NULL, UserNameSnapshot nvarchar(200) NULL,
+        CONSTRAINT CK_OperationBatches_Routing CHECK (
+            (Kind=0 AND FromWarehouseId IS NULL AND ToWarehouseId IS NOT NULL AND CounterpartyId IS NOT NULL) OR
+            (Kind=1 AND FromWarehouseId IS NOT NULL AND ToWarehouseId IS NULL AND CounterpartyId IS NOT NULL) OR
+            (Kind=2 AND FromWarehouseId IS NOT NULL AND ToWarehouseId IS NOT NULL AND FromWarehouseId<>ToWarehouseId AND CounterpartyId IS NULL))
+    );
+    ALTER TABLE dbo.StockOperations ADD BatchId int NULL CONSTRAINT FK_StockOperations_Batch REFERENCES dbo.OperationBatches(Id),
+        ProductNameSnapshot nvarchar(200) NULL, UnitSnapshot nvarchar(30) NULL;
+    EXEC(N'CREATE INDEX IX_StockOperations_Batch ON dbo.StockOperations(BatchId,Id)');
+    CREATE INDEX IX_OperationBatches_Date ON dbo.OperationBatches(OccurredAt DESC,Id DESC);
+    CREATE TABLE dbo.InvoiceSequence (
+        Id int NOT NULL CONSTRAINT PK_InvoiceSequence PRIMARY KEY CHECK (Id=1),
+        NextNumber bigint NOT NULL CONSTRAINT CK_InvoiceSequence_Positive CHECK (NextNumber>0)
+    );
+    INSERT dbo.InvoiceSequence(Id,NextNumber) VALUES(1,1);
+    CREATE TABLE dbo.Invoices (
+        Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_Invoices PRIMARY KEY,
+        BatchId int NOT NULL CONSTRAINT UQ_Invoices_Batch UNIQUE CONSTRAINT FK_Invoices_Batch REFERENCES dbo.OperationBatches(Id),
+        Series nvarchar(30) NOT NULL, Number nvarchar(50) NOT NULL,
+        DocumentDate date NOT NULL,
+        Payload nvarchar(max) NOT NULL CONSTRAINT CK_Invoices_Json CHECK(ISJSON(Payload)=1),
+        CONSTRAINT UQ_Invoices_SeriesNumber UNIQUE(Series,Number)
+    );
+    UPDATE dbo.WarehouseSchemaVersion SET Version=3 WHERE Id=1;
 END
 SELECT @created;

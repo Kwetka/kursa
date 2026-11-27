@@ -10,6 +10,9 @@ public sealed class Product
     public string Unit { get; set; } = "шт";
     public decimal PurchasePrice { get; set; }
     public decimal SalePrice { get; set; }
+    // Неизвестные значения остаются null; массу и грузовые места можно уточнить при отгрузке.
+    public decimal? UnitWeightKg { get; set; }
+    public decimal? UnitsPerCargoPlace { get; set; }
     public override string ToString() => Name;
 }
 
@@ -28,6 +31,8 @@ public sealed class Counterparty
     public int Id { get; set; }
     public string Name { get; set; } = "";
     public bool IsSupplier { get; set; }
+    public string Address { get; set; } = "";
+    public string Unp { get; set; } = "";
     public string TypeName => IsSupplier ? "Поставщик" : "Покупатель";
     public override string ToString() => $"{Name} ({TypeName.ToLowerInvariant()})";
 }
@@ -77,6 +82,8 @@ public sealed record OperationInput(
 public sealed class OperationRow
 {
     public int Id { get; init; }
+    public int? BatchId { get; init; }
+    public string GroupName => BatchId.HasValue ? $"Г-{BatchId}" : $"О-{Id}";
     public DateTime OccurredAt { get; init; }
     public OperationKind Kind { get; init; }
     public string KindName => Kind switch

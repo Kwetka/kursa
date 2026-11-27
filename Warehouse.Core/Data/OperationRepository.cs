@@ -15,6 +15,8 @@ public sealed partial class WarehouseRepository
         using var c = Open();
         using var tx = c.BeginTransaction(IsolationLevel.Serializable);
         var actual = RequireActor(c, tx, actor, u => u.CanPerform(operation.Kind));
+        if (operation.Kind==OperationKind.Shipment)
+            throw new InvalidOperationException("Реализация проводится только вместе с накладной через многопозиционную операцию.");
         using (var q = new SqlCommand(@"DECLARE @result int, @resource nvarchar(255) = N'WarehouseCourse.Product:' + CONVERT(nvarchar(20), @product);
             EXEC @result = sys.sp_getapplock @Resource=@resource, @LockMode=N'Exclusive', @LockOwner=N'Transaction', @LockTimeout=15000;
             SELECT @result;", c, tx))
@@ -81,27 +83,34 @@ public sealed partial class WarehouseRepository
         Validation.Interval(filter.FromInclusive, filter.ToExclusive);
         var result = new List<OperationRow>();
         using var c = Open(); using var q = c.CreateCommand();
-        q.CommandText = @"SELECT o.Id,o.OccurredAt,o.Kind,p.Name,o.Quantity,p.Unit,
-            COALESCE(wf.Name,N'—'),COALESCE(wt.Name,N'—'),COALESCE(cp.Name,N'—'),o.Comment,u.FullName
+        q.CommandText = @"SELECT o.Id,o.OccurredAt,o.Kind,COALESCE(o.ProductNameSnapshot,p.Name),o.Quantity,COALESCE(o.UnitSnapshot,p.Unit),
+            COALESCE(bs.FromWarehouseNameSnapshot,wf.Name,N'—'),COALESCE(bs.ToWarehouseNameSnapshot,wt.Name,N'—'),
+            COALESCE(bs.CounterpartyNameSnapshot,cp.Name,N'—'),o.Comment,COALESCE(bs.UserNameSnapshot,u.FullName),o.BatchId
             FROM dbo.StockOperations o JOIN dbo.Products p ON p.Id=o.ProductId
+            LEFT JOIN dbo.OperationBatches bs ON bs.Id=o.BatchId LEFT JOIN dbo.Invoices inv ON inv.BatchId=o.BatchId
             LEFT JOIN dbo.Warehouses wf ON wf.Id=o.FromWarehouseId LEFT JOIN dbo.Warehouses wt ON wt.Id=o.ToWarehouseId
             LEFT JOIN dbo.Counterparties cp ON cp.Id=o.CounterpartyId JOIN dbo.WarehouseUsers u ON u.Id=o.UserId
             WHERE (@from IS NULL OR o.OccurredAt>=@from) AND (@to IS NULL OR o.OccurredAt<@to)
               AND (@product IS NULL OR o.ProductId=@product) AND (@warehouse IS NULL OR o.FromWarehouseId=@warehouse OR o.ToWarehouseId=@warehouse)
               AND (@party IS NULL OR o.CounterpartyId=@party) AND (@kind IS NULL OR o.Kind=@kind)
-              AND (p.Name LIKE @pattern ESCAPE N'~' OR wf.Name LIKE @pattern ESCAPE N'~' OR wt.Name LIKE @pattern ESCAPE N'~'
+              AND (p.Name LIKE @pattern ESCAPE N'~' OR o.ProductNameSnapshot LIKE @pattern ESCAPE N'~' OR wf.Name LIKE @pattern ESCAPE N'~' OR wt.Name LIKE @pattern ESCAPE N'~'
                    OR cp.Name LIKE @pattern ESCAPE N'~' OR o.Comment LIKE @pattern ESCAPE N'~' OR u.FullName LIKE @pattern ESCAPE N'~'
+                   OR bs.FromWarehouseNameSnapshot LIKE @pattern ESCAPE N'~' OR bs.ToWarehouseNameSnapshot LIKE @pattern ESCAPE N'~'
+                   OR bs.CounterpartyNameSnapshot LIKE @pattern ESCAPE N'~' OR bs.UserNameSnapshot LIKE @pattern ESCAPE N'~'
+                   OR inv.Series LIKE @pattern ESCAPE N'~' OR inv.Number LIKE @pattern ESCAPE N'~'
                    OR CONVERT(nvarchar(20),o.Id) LIKE @pattern ESCAPE N'~')
             ORDER BY o.OccurredAt DESC,o.Id DESC";
         Add(q,"@from",SqlDbType.DateTime2,filter.FromInclusive); Add(q,"@to",SqlDbType.DateTime2,filter.ToExclusive);
         Add(q,"@product",SqlDbType.Int,filter.ProductId); Add(q,"@warehouse",SqlDbType.Int,filter.WarehouseId); Add(q,"@party",SqlDbType.Int,filter.CounterpartyId);
         Add(q,"@kind",SqlDbType.TinyInt,filter.Kind.HasValue ? (byte)filter.Kind.Value : null); Add(q,"@pattern",SqlDbType.NVarChar,Pattern(filter.Search), 802);
         using var r=q.ExecuteReader();
-        while(r.Read()) result.Add(new OperationRow { Id=r.GetInt32(0), OccurredAt=r.GetDateTime(1), Kind=(OperationKind)r.GetByte(2),
-            ProductName=r.GetString(3),Quantity=r.GetDecimal(4),Unit=r.GetString(5),FromWarehouse=r.GetString(6),ToWarehouse=r.GetString(7),
-            CounterpartyName=r.GetString(8),Comment=r.GetString(9),UserName=r.GetString(10) });
+        while(r.Read()) result.Add(ReadOperationRow(r));
         return result;
     }
+
+    private static OperationRow ReadOperationRow(SqlDataReader r) => new() { Id=r.GetInt32(0), OccurredAt=r.GetDateTime(1), Kind=(OperationKind)r.GetByte(2),
+        ProductName=r.GetString(3),Quantity=r.GetDecimal(4),Unit=r.GetString(5),FromWarehouse=r.GetString(6),ToWarehouse=r.GetString(7),
+        CounterpartyName=r.GetString(8),Comment=r.GetString(9),UserName=r.GetString(10),BatchId=r.IsDBNull(11)?null:r.GetInt32(11) };
 
     public List<StockRow> GetStocks(StockFilter filter)
     {

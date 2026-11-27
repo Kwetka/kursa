@@ -28,6 +28,7 @@
             <TabItem x:Name="ProductsTab" Header="Номенклатура"><ContentControl x:Name="ProductsHost"/></TabItem>
             <TabItem x:Name="WarehousesTab" Header="Склады"><ContentControl x:Name="WarehousesHost"/></TabItem>
             <TabItem x:Name="CounterpartiesTab" Header="Контрагенты"><ContentControl x:Name="CounterpartiesHost"/></TabItem>
+            <TabItem x:Name="OrganizationTab" Header="Организация"><ContentControl x:Name="OrganizationHost"/></TabItem>
             <TabItem x:Name="OperationsTab" Header="Операции"><ContentControl x:Name="OperationsHost"/></TabItem>
             <TabItem x:Name="StocksTab" Header="Остатки"><ContentControl x:Name="StocksHost"/></TabItem>
             <TabItem x:Name="TurnoverTab" Header="Оборачиваемость"><ContentControl x:Name="TurnoverHost"/></TabItem>
